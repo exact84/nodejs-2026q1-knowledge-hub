@@ -1,26 +1,22 @@
-import { validate } from 'uuid';
-import { StatusCodes } from 'http-status-codes';
 import { request } from './lib';
+import { StatusCodes } from 'http-status-codes';
+import { validate } from 'uuid';
 import {
   getTokenAndUserId,
   shouldAuthorizationBeTested,
   removeTokenUser,
 } from './utils';
-import {
-  usersRoutes,
-  articlesRoutes,
-  commentsRoutes,
-} from './endpoints';
+import { categoriesRoutes, articlesRoutes } from './endpoints';
 
-const createUserDto = {
-  login: 'TEST_LOGIN',
-  password: 'TEST_PASSWORD',
+const createCategoryDto = {
+  name: 'TEST_CATEGORY',
+  description: 'Test category description',
 };
 
 // Probability of collisions for UUID is almost zero
 const randomUUID = '0a35dd62-e09f-444b-a628-f4e7c6954f57';
 
-describe('Users (e2e)', () => {
+describe('Category (e2e)', () => {
   const unauthorizedRequest = request;
   const commonHeaders = { Accept: 'application/json' };
   let mockUserId: string | undefined;
@@ -45,33 +41,34 @@ describe('Users (e2e)', () => {
   });
 
   describe('GET', () => {
-    it('should correctly get all users', async () => {
+    it('should correctly get all categories', async () => {
       const response = await unauthorizedRequest
-        .get(usersRoutes.getAll)
+        .get(categoriesRoutes.getAll)
         .set(commonHeaders);
+
       expect(response.status).toBe(StatusCodes.OK);
       expect(response.body).toBeInstanceOf(Array);
     });
 
-    it('should correctly get user by id', async () => {
+    it('should correctly get category by id', async () => {
       const creationResponse = await unauthorizedRequest
-        .post(usersRoutes.create)
+        .post(categoriesRoutes.create)
         .set(commonHeaders)
-        .send(createUserDto);
+        .send(createCategoryDto);
 
       const { id } = creationResponse.body;
 
       expect(creationResponse.statusCode).toBe(StatusCodes.CREATED);
 
       const searchResponse = await unauthorizedRequest
-        .get(usersRoutes.getById(id))
+        .get(categoriesRoutes.getById(id))
         .set(commonHeaders);
 
       expect(searchResponse.statusCode).toBe(StatusCodes.OK);
       expect(searchResponse.body).toBeInstanceOf(Object);
 
       const cleanupResponse = await unauthorizedRequest
-        .delete(usersRoutes.delete(id))
+        .delete(categoriesRoutes.delete(id))
         .set(commonHeaders);
 
       expect(cleanupResponse.statusCode).toBe(StatusCodes.NO_CONTENT);
@@ -79,15 +76,15 @@ describe('Users (e2e)', () => {
 
     it('should respond with BAD_REQUEST status code in case of invalid id', async () => {
       const response = await unauthorizedRequest
-        .get(usersRoutes.getById('some-invalid-id'))
+        .get(categoriesRoutes.getById('some-invalid-id'))
         .set(commonHeaders);
 
       expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     });
 
-    it("should respond with NOT_FOUND status code in case if user doesn't exist", async () => {
+    it("should respond with NOT_FOUND status code in case if category doesn't exist", async () => {
       const response = await unauthorizedRequest
-        .get(usersRoutes.getById(randomUUID))
+        .get(categoriesRoutes.getById(randomUUID))
         .set(commonHeaders);
 
       expect(response.status).toBe(StatusCodes.NOT_FOUND);
@@ -95,26 +92,22 @@ describe('Users (e2e)', () => {
   });
 
   describe('POST', () => {
-    it('should correctly create user', async () => {
+    it('should correctly create category', async () => {
       const response = await unauthorizedRequest
-        .post(usersRoutes.create)
+        .post(categoriesRoutes.create)
         .set(commonHeaders)
-        .send(createUserDto);
+        .send(createCategoryDto);
 
-      const { id, role, login, createdAt, updatedAt } = response.body;
+      const { id, name, description } = response.body;
 
       expect(response.status).toBe(StatusCodes.CREATED);
 
-      expect(login).toBe(createUserDto.login);
-      expect(response.body).not.toHaveProperty('password');
+      expect(name).toBe(createCategoryDto.name);
+      expect(description).toBe(createCategoryDto.description);
       expect(validate(id)).toBe(true);
-      expect(role).toBe('viewer');
-      expect(typeof createdAt).toBe('number');
-      expect(typeof updatedAt).toBe('number');
-      expect(createdAt === updatedAt).toBe(true);
 
       const cleanupResponse = await unauthorizedRequest
-        .delete(usersRoutes.delete(id))
+        .delete(categoriesRoutes.delete(id))
         .set(commonHeaders);
 
       expect(cleanupResponse.statusCode).toBe(StatusCodes.NO_CONTENT);
@@ -123,21 +116,21 @@ describe('Users (e2e)', () => {
     it('should respond with BAD_REQUEST in case of invalid required data', async () => {
       const responses = await Promise.all([
         unauthorizedRequest
-          .post(usersRoutes.create)
+          .post(categoriesRoutes.create)
           .set(commonHeaders)
           .send({}),
         unauthorizedRequest
-          .post(usersRoutes.create)
+          .post(categoriesRoutes.create)
           .set(commonHeaders)
-          .send({ login: 'TEST_LOGIN' }),
+          .send({ name: 'TEST_CATEGORY' }),
         unauthorizedRequest
-          .post(usersRoutes.create)
+          .post(categoriesRoutes.create)
           .set(commonHeaders)
-          .send({ password: 'TEST_PASSWORD' }),
+          .send({ description: 'Test description' }),
         unauthorizedRequest
-          .post(usersRoutes.create)
+          .post(categoriesRoutes.create)
           .set(commonHeaders)
-          .send({ login: null, password: 12345 }),
+          .send({ name: null, description: 12345 }),
       ]);
 
       expect(
@@ -149,59 +142,42 @@ describe('Users (e2e)', () => {
   });
 
   describe('PUT', () => {
-    it('should correctly update user password match', async () => {
+    it('should correctly update category', async () => {
       const creationResponse = await unauthorizedRequest
-        .post(usersRoutes.create)
+        .post(categoriesRoutes.create)
         .set(commonHeaders)
-        .send(createUserDto);
+        .send(createCategoryDto);
 
-      const { id: createdId, createdAt: initialCreatedAt } =
-        creationResponse.body;
+      const { id: createdId } = creationResponse.body;
 
       expect(creationResponse.status).toBe(StatusCodes.CREATED);
 
-      const updateResponse = await unauthorizedRequest
-        .put(usersRoutes.update(createdId))
+      const updatedDescription = 'Updated description';
+
+      const { statusCode } = await unauthorizedRequest
+        .put(categoriesRoutes.update(createdId))
         .set(commonHeaders)
         .send({
-          oldPassword: createUserDto.password,
-          newPassword: 'NEW_PASSWORD',
+          name: createCategoryDto.name,
+          description: updatedDescription,
         });
 
-      expect(updateResponse.statusCode).toBe(StatusCodes.OK);
+      expect(statusCode).toBe(StatusCodes.OK);
 
-      const updatedUserResponse = await unauthorizedRequest
-        .get(usersRoutes.getById(createdId))
+      const updatedCategoryResponse = await unauthorizedRequest
+        .get(categoriesRoutes.getById(createdId))
         .set(commonHeaders);
 
-      const {
-        id: updatedId,
-        login,
-        createdAt,
-        updatedAt,
-      } = updatedUserResponse.body;
+      const { id: updatedId, name, description } =
+        updatedCategoryResponse.body;
 
-      expect(login).toBe(createUserDto.login);
-      expect(updateResponse.body).not.toHaveProperty('password');
+      expect(name).toBe(createCategoryDto.name);
+      expect(description).toBe(updatedDescription);
       expect(validate(updatedId)).toBe(true);
       expect(createdId).toBe(updatedId);
-      expect(typeof createdAt).toBe('number');
-      expect(typeof updatedAt).toBe('number');
-      expect(createdAt).toBe(initialCreatedAt);
-      expect(updatedAt).toBeGreaterThan(createdAt);
-
-      const updateResponse2 = await unauthorizedRequest
-        .put(usersRoutes.update(createdId))
-        .set(commonHeaders)
-        .send({
-          oldPassword: createUserDto.password,
-          newPassword: 'NEW_PASSWORD',
-        });
-
-      expect(updateResponse2.statusCode).toBe(StatusCodes.FORBIDDEN);
 
       const cleanupResponse = await unauthorizedRequest
-        .delete(usersRoutes.delete(createdId))
+        .delete(categoriesRoutes.delete(createdId))
         .set(commonHeaders);
 
       expect(cleanupResponse.statusCode).toBe(StatusCodes.NO_CONTENT);
@@ -209,32 +185,43 @@ describe('Users (e2e)', () => {
 
     it('should respond with BAD_REQUEST status code in case of invalid id', async () => {
       const response = await unauthorizedRequest
-        .put(usersRoutes.update('some-invalid-id'))
+        .put(categoriesRoutes.update('some-invalid-id'))
         .set(commonHeaders)
         .send({
-          oldPassword: 'test',
-          newPassword: 'fake',
+          name: createCategoryDto.name,
+          description: 'Updated',
         });
 
       expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     });
 
     it('should respond with BAD_REQUEST status code in case of invalid dto', async () => {
-      const response = await unauthorizedRequest
-        .put(usersRoutes.update(randomUUID))
+      const creationResponse = await unauthorizedRequest
+        .post(categoriesRoutes.create)
         .set(commonHeaders)
-        .send({});
+        .send(createCategoryDto);
+
+      const { id: createdId } = creationResponse.body;
+      expect(creationResponse.status).toBe(StatusCodes.CREATED);
+
+      const response = await unauthorizedRequest
+        .put(categoriesRoutes.update(createdId))
+        .set(commonHeaders)
+        .send({
+          name: 12345,
+          description: true,
+        });
 
       expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     });
 
-    it("should respond with NOT_FOUND status code in case if user doesn't exist", async () => {
+    it("should respond with NOT_FOUND status code in case if category doesn't exist", async () => {
       const response = await unauthorizedRequest
-        .put(usersRoutes.update(randomUUID))
+        .put(categoriesRoutes.update(randomUUID))
         .set(commonHeaders)
         .send({
-          oldPassword: 'test',
-          newPassword: 'fake',
+          name: createCategoryDto.name,
+          description: 'Updated',
         });
 
       expect(response.status).toBe(StatusCodes.NOT_FOUND);
@@ -242,24 +229,24 @@ describe('Users (e2e)', () => {
   });
 
   describe('DELETE', () => {
-    it('should correctly delete user', async () => {
+    it('should correctly delete category', async () => {
       const response = await unauthorizedRequest
-        .post(usersRoutes.create)
+        .post(categoriesRoutes.create)
         .set(commonHeaders)
-        .send(createUserDto);
+        .send(createCategoryDto);
 
       const { id } = response.body;
 
       expect(response.status).toBe(StatusCodes.CREATED);
 
       const cleanupResponse = await unauthorizedRequest
-        .delete(usersRoutes.delete(id))
+        .delete(categoriesRoutes.delete(id))
         .set(commonHeaders);
 
       expect(cleanupResponse.statusCode).toBe(StatusCodes.NO_CONTENT);
 
       const searchResponse = await unauthorizedRequest
-        .get(usersRoutes.getById(id))
+        .get(categoriesRoutes.getById(id))
         .set(commonHeaders);
 
       expect(searchResponse.statusCode).toBe(StatusCodes.NOT_FOUND);
@@ -267,85 +254,65 @@ describe('Users (e2e)', () => {
 
     it('should respond with BAD_REQUEST status code in case of invalid id', async () => {
       const response = await unauthorizedRequest
-        .delete(usersRoutes.delete('some-invalid-id'))
+        .delete(categoriesRoutes.delete('some-invalid-id'))
         .set(commonHeaders);
 
       expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     });
 
-    it("should respond with NOT_FOUND status code in case if user doesn't exist", async () => {
+    it("should respond with NOT_FOUND status code in case if category doesn't exist", async () => {
       const response = await unauthorizedRequest
-        .delete(usersRoutes.delete(randomUUID))
+        .delete(categoriesRoutes.delete(randomUUID))
         .set(commonHeaders);
 
       expect(response.status).toBe(StatusCodes.NOT_FOUND);
     });
 
-    it('should set article.authorId to null and delete user comments after deletion', async () => {
-      const createResponse = await unauthorizedRequest
-        .post(usersRoutes.create)
+    it('should set article.categoryId to null after deletion', async () => {
+      const creationCategoryResponse = await unauthorizedRequest
+        .post(categoriesRoutes.create)
         .set(commonHeaders)
-        .send(createUserDto);
+        .send(createCategoryDto);
 
-      const { id: userId } = createResponse.body;
-      expect(createResponse.status).toBe(StatusCodes.CREATED);
+      const { id: categoryId } = creationCategoryResponse.body;
 
-      // Create article authored by this user
+      expect(creationCategoryResponse.status).toBe(StatusCodes.CREATED);
+
       const createArticleDto = {
         title: 'TEST_ARTICLE',
         content: 'Test content',
         status: 'draft',
-        authorId: userId,
-        categoryId: null,
+        authorId: null,
+        categoryId,
         tags: [],
       };
 
-      const createArticleResponse = await unauthorizedRequest
+      const creationArticleResponse = await unauthorizedRequest
         .post(articlesRoutes.create)
         .set(commonHeaders)
         .send(createArticleDto);
 
-      const { id: articleId } = createArticleResponse.body;
-      expect(createArticleResponse.status).toBe(StatusCodes.CREATED);
+      const { id: articleId } = creationArticleResponse.body;
 
-      // Create comment by this user
-      const createCommentDto = {
-        content: 'Test comment',
-        articleId,
-        authorId: userId,
-      };
+      expect(creationArticleResponse.statusCode).toBe(StatusCodes.CREATED);
 
-      const createCommentResponse = await unauthorizedRequest
-        .post(commentsRoutes.create)
-        .set(commonHeaders)
-        .send(createCommentDto);
-
-      const { id: commentId } = createCommentResponse.body;
-      expect(createCommentResponse.status).toBe(StatusCodes.CREATED);
-
-      // Delete user
-      const deleteResponse = await unauthorizedRequest
-        .delete(usersRoutes.delete(userId))
+      const categoryDeletionResponse = await unauthorizedRequest
+        .delete(categoriesRoutes.delete(categoryId))
         .set(commonHeaders);
 
-      expect(deleteResponse.statusCode).toBe(StatusCodes.NO_CONTENT);
+      expect(categoryDeletionResponse.statusCode).toBe(StatusCodes.NO_CONTENT);
 
-      // Verify article.authorId is null
       const searchArticleResponse = await unauthorizedRequest
         .get(articlesRoutes.getById(articleId))
         .set(commonHeaders);
 
       expect(searchArticleResponse.statusCode).toBe(StatusCodes.OK);
-      expect(searchArticleResponse.body.authorId).toBeNull();
 
-      // Verify comment is deleted
-      const searchCommentResponse = await unauthorizedRequest
-        .get(commentsRoutes.getById(commentId))
-        .set(commonHeaders);
+      const { categoryId: articleCategoryId } = searchArticleResponse.body;
 
-      expect(searchCommentResponse.statusCode).toBe(StatusCodes.NOT_FOUND);
+      expect(articleCategoryId).toBeNull();
 
-      // Cleanup article
+      // Cleanup
       const cleanupArticle = await unauthorizedRequest
         .delete(articlesRoutes.delete(articleId))
         .set(commonHeaders);
