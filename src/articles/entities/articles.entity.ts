@@ -1,3 +1,5 @@
+import { ArticleStatus } from '../enums/article-status.enum';
+
 export interface Article {
   id: string; // uuid v4
   title: string;
@@ -8,10 +10,4 @@ export interface Article {
   tags: string[]; // array of tag names
   createdAt: number; // timestamp of creation
   updatedAt: number; // timestamp of last update
-}
-
-export enum ArticleStatus {
-  DRAFT = 'draft',
-  PUBLISHED = 'published',
-  ARCHIVED = 'archived',
 }

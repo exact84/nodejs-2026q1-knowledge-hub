@@ -1,9 +1,4 @@
-// users/entities/user.entity.ts
-export enum UserRole {
-  ADMIN = 'admin',
-  EDITOR = 'editor',
-  VIEWER = 'viewer',
-}
+import { UserRole } from '../enums/user-role.enum';
 
 export interface User {
   id: string;
@@ -12,17 +7,6 @@ export interface User {
   role: UserRole;
   createdAt: number;
   updatedAt: number;
-}
-
-export interface CreateUserDto {
-  login: string;
-  password: string;
-  role?: 'admin' | 'editor' | 'viewer'; // defaults to 'viewer'
-}
-
-export interface UpdatePasswordDto {
-  oldPassword: string;
-  newPassword: string;
 }
 
 export type PublicUser = Omit<User, 'password'>;
