@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +13,15 @@ async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
+
+  const config = new DocumentBuilder()
+    .setTitle('Knowledge Hub API')
+    .setDescription('REST API for users, articles, categories and comments')
+    .setVersion('1.0')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('doc', app, document);
 
   await app.listen(4000);
 }
