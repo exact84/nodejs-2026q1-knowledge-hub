@@ -14,7 +14,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UsersService } from './users.service';
 import { PublicUser } from './entities/user.entity';
 
-@Controller('users')
+@Controller('user')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
