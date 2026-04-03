@@ -4,10 +4,14 @@ import { Category } from './entities/categories.entity';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { ArticlesService } from 'src/articles/articles.service';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly categoriesRepository: CategoriesRepository) {}
+  constructor(
+    private readonly categoriesRepository: CategoriesRepository,
+    private readonly articlesService: ArticlesService,
+  ) {}
 
   create(dto: CreateCategoryDto): Category {
     const category: Category = {
@@ -56,6 +60,7 @@ export class CategoriesService {
       throw new NotFoundException(`Category with id ${id} not found`);
     }
 
+    this.articlesService.clearCategoryId(id);
     this.categoriesRepository.delete(id);
   }
 }

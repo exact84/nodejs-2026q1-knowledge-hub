@@ -24,7 +24,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  getOne(@Param('id', new ParseUUIDPipe()) id: string): PublicUser | undefined {
+  getOne(@Param('id', new ParseUUIDPipe()) id: string): PublicUser {
     return this.usersService.getOne(id);
   }
 

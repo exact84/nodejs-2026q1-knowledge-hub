@@ -10,10 +10,16 @@ import { UserRole } from './enums/user-role.enum';
 import { toPublicUser } from 'src/helpers/toPublicUser';
 import { UsersRepository } from './users.repository';
 import { UpdatePasswordDto } from './dto/update-password.dto';
+import { ArticlesService } from 'src/articles/articles.service';
+import { CommentsService } from 'src/comments/comments.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly articlesService: ArticlesService,
+    private readonly commentsService: CommentsService,
+  ) {}
 
   create(createUserDto: CreateUserDto): PublicUser {
     const timestamp = Date.now();
@@ -76,6 +82,8 @@ export class UsersService {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
+    this.articlesService.clearAuthorId(id);
+    this.commentsService.deleteByAuthorId(id);
     this.usersRepository.delete(id);
   }
 }
