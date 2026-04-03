@@ -17,4 +17,17 @@ export class UsersRepository {
   getOne(id: string): User | undefined {
     return this.users.find((user) => user.id === id);
   }
+
+  update(user: User): User {
+    const index = this.users.findIndex(
+      (currentUser) => currentUser.id === user.id,
+    );
+
+    this.users[index] = user;
+    return user;
+  }
+
+  delete(id: string): void {
+    this.users = this.users.filter((user) => user.id !== id);
+  }
 }

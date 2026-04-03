@@ -6,6 +6,8 @@ import {
   Post,
   Put,
   ParseUUIDPipe,
+  Delete,
+  HttpCode,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
@@ -33,12 +35,15 @@ export class UsersController {
 
   @Put(':id')
   updatePassword(
-    @Param('id') id: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
-  ): { id: string; body: UpdatePasswordDto } {
-    return {
-      id,
-      body: updatePasswordDto,
-    };
+  ): PublicUser {
+    return this.usersService.updatePassword(id, updatePasswordDto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  delete(@Param('id', new ParseUUIDPipe()) id: string): void {
+    this.usersService.delete(id);
   }
 }

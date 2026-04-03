@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PublicUser, User } from './entities/user.entity';
 import { UserRole } from './enums/user-role.enum';
 import { toPublicUser } from 'src/helpers/toPublicUser';
 import { UsersRepository } from './users.repository';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly userRepository: UsersRepository) {}
+  constructor(private readonly usersRepository: UsersRepository) {}
 
   create(createUserDto: CreateUserDto): PublicUser {
     const timestamp = Date.now();
@@ -22,23 +27,55 @@ export class UsersService {
       updatedAt: timestamp,
     };
 
-    this.userRepository.create(newUser);
+    this.usersRepository.create(newUser);
 
     return toPublicUser(newUser);
   }
 
   getAll(): PublicUser[] {
-    const result = this.userRepository.getAll().map(toPublicUser);
+    const result = this.usersRepository.getAll().map(toPublicUser);
     return result;
   }
 
   getOne(id: string): PublicUser {
-    const user = this.userRepository.getOne(id);
+    const user = this.usersRepository.getOne(id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
     return toPublicUser(user);
+  }
+
+  updatePassword(id: string, updatePasswordDto: UpdatePasswordDto): PublicUser {
+    const user = this.usersRepository.getOne(id);
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    if (user.password !== updatePasswordDto.oldPassword) {
+      throw new ForbiddenException('Old password is wrong');
+    }
+
+    const updatedUser: User = {
+      ...user,
+      password: updatePasswordDto.newPassword,
+      updatedAt: Date.now(),
+    };
+
+    const savedUser = this.usersRepository.update(updatedUser);
+
+    return toPublicUser(savedUser);
+  }
+
+  delete(id: string): void {
+    const user = this.usersRepository.getOne(id);
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    this.usersRepository.delete(id);
   }
 }
