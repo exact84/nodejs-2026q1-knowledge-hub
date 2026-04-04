@@ -1,6 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ArticleStatus } from '../enums/article-status.enum';
+import { ArticleSortBy, SortOrder } from '../enums/article-sorting';
+import { Type } from 'class-transformer';
 
 export class GetArticlesQueryDto {
   @ApiProperty({
@@ -24,4 +34,32 @@ export class GetArticlesQueryDto {
   @IsOptional()
   @IsString()
   tag?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @ApiPropertyOptional({
+    enum: ArticleSortBy,
+    example: ArticleSortBy.CREATED_AT,
+  })
+  @IsOptional()
+  @IsEnum(ArticleSortBy)
+  sortBy?: ArticleSortBy;
+
+  @ApiPropertyOptional({ enum: SortOrder, example: SortOrder.DESC })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  order?: SortOrder;
 }

@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto } from './dto/create-article.dto';
-import { Article } from './entities/article.entity';
+import { Article, PaginatedArticlesResponse } from './entities/article.entity';
 import { GetArticlesQueryDto } from './dto/get-articles-query.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 
@@ -39,7 +39,9 @@ export class ArticlesController {
   }
 
   @Get()
-  getAll(@Query() queryDto: GetArticlesQueryDto): Article[] {
+  getAll(
+    @Query() queryDto: GetArticlesQueryDto,
+  ): Article[] | PaginatedArticlesResponse {
     return this.articlesService.getAll(queryDto);
   }
 

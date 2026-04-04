@@ -11,3 +11,10 @@ export interface Article {
   createdAt: number; // timestamp of creation
   updatedAt: number; // timestamp of last update
 }
+
+export interface PaginatedArticlesResponse {
+  total: number;
+  page: number;
+  limit: number;
+  data: Article[];
+}
