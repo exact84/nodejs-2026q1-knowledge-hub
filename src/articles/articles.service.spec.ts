@@ -1,9 +1,10 @@
 import { ArticlesService } from './articles.service';
-import { ArticleSortBy, SortOrder } from './enums/article-sorting';
+import { ArticleSortBy } from './enums/article-sorting.enum';
 import { Article } from './entities/article.entity';
 import { ArticleStatus } from './enums/article-status.enum';
 import { CommentsService } from '../comments/comments.service';
 import { ArticlesRepository } from './articles.repository';
+import { SortOrder } from '../common/pagination/sort-order.enum';
 
 class FakeArticlesRepository implements Pick<ArticlesRepository, 'getAll'> {
   private articles: Article[] = [

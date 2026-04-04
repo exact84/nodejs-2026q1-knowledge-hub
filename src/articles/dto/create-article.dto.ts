@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsEnum,
@@ -19,37 +19,33 @@ export class CreateArticleDto {
   @MinLength(1)
   content: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     enum: ArticleStatus,
     example: ArticleStatus.DRAFT,
-    required: false,
   })
   @IsOptional()
   @IsEnum(ArticleStatus)
   status?: ArticleStatus;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440000',
-    required: false,
     nullable: true,
   })
   @IsOptional()
   @IsString()
   authorId?: string | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440000',
-    required: false,
     nullable: true,
   })
   @IsOptional()
   @IsString()
   categoryId?: string | null;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     type: [String],
     example: ['nestjs', 'backend'],
-    required: false,
   })
   @IsOptional()
   @IsArray()

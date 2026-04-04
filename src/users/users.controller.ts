@@ -8,11 +8,14 @@ import {
   ParseUUIDPipe,
   Delete,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { UsersService } from './users.service';
 import { PublicUser } from './entities/user.entity';
+import { PaginatedResponse } from '../common/pagination/paginated-response.type';
+import { GetUsersQueryDto } from './dto/get-users-query.dto';
 
 @Controller('user')
 export class UsersController {
@@ -29,8 +32,10 @@ export class UsersController {
   }
 
   @Get()
-  getAll(): PublicUser[] {
-    return this.usersService.getAll();
+  getAll(
+    @Query() queryDto: GetUsersQueryDto,
+  ): PublicUser[] | PaginatedResponse<PublicUser> {
+    return this.usersService.getAll(queryDto);
   }
 
   @Put(':id')

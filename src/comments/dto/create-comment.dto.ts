@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class CreateCommentDto {
@@ -11,9 +11,8 @@ export class CreateCommentDto {
   @IsUUID()
   articleId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '550e8400-e29b-41d4-a716-446655440000',
-    required: false,
     nullable: true,
   })
   @IsOptional()

@@ -6,13 +6,16 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { CreateArticleDto } from './dto/create-article.dto';
-import { Article, PaginatedArticlesResponse } from './entities/article.entity';
+import { Article } from './entities/article.entity';
 import { ArticleStatus } from './enums/article-status.enum';
 import { ArticlesRepository } from './articles.repository';
 import { GetArticlesQueryDto } from './dto/get-articles-query.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { CommentsService } from '../comments/comments.service';
-import { ArticleSortBy, SortOrder } from './enums/article-sorting';
+import { ArticleSortBy } from './enums/article-sorting.enum';
+import { PaginatedResponse } from '../common/pagination/paginated-response.type';
+import { paginate } from '../common/pagination/paginate.util';
+import { SortOrder } from '../common/pagination/sort-order.enum';
 
 @Injectable()
 export class ArticlesService {
@@ -40,7 +43,9 @@ export class ArticlesService {
     return this.articlesRepository.create(article);
   }
 
-  getAll(queryDto: GetArticlesQueryDto): Article[] | PaginatedArticlesResponse {
+  getAll(
+    queryDto: GetArticlesQueryDto,
+  ): Article[] | PaginatedResponse<Article> {
     let articles = [...this.articlesRepository.getAll()];
 
     if (queryDto.status) {
@@ -86,16 +91,7 @@ export class ArticlesService {
       return order === SortOrder.ASC ? compareResult : -compareResult;
     });
 
-    const total = articles.length;
-
-    const result: PaginatedArticlesResponse = {
-      total,
-      page,
-      limit,
-      data: articles.slice((page - 1) * limit, page * limit),
-    };
-
-    return hasPagination ? result : articles;
+    return hasPagination ? paginate(articles, page, limit) : articles;
   }
 
   update(id: string, dto: UpdateArticleDto): Article {

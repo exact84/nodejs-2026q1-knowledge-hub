@@ -8,11 +8,14 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Category } from './entities/categories.entity';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { PaginatedResponse } from '../common/pagination/paginated-response.type';
+import { GetCategoriesQueryDto } from './dto/get-categories-query.dto';
 
 @Controller('category')
 export class CategoriesController {
@@ -24,8 +27,10 @@ export class CategoriesController {
   }
 
   @Get()
-  getAll(): Category[] {
-    return this.categoriesService.getAll();
+  getAll(
+    @Query() queryDto: GetCategoriesQueryDto,
+  ): Category[] | PaginatedResponse<Category> {
+    return this.categoriesService.getAll(queryDto);
   }
 
   @Get(':id')

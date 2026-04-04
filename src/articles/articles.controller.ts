@@ -12,9 +12,10 @@ import {
 } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto } from './dto/create-article.dto';
-import { Article, PaginatedArticlesResponse } from './entities/article.entity';
+import { Article } from './entities/article.entity';
 import { GetArticlesQueryDto } from './dto/get-articles-query.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
+import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 
 @Controller('article')
 export class ArticlesController {
@@ -41,7 +42,7 @@ export class ArticlesController {
   @Get()
   getAll(
     @Query() queryDto: GetArticlesQueryDto,
-  ): Article[] | PaginatedArticlesResponse {
+  ): Article[] | PaginatedResponse<Article> {
     return this.articlesService.getAll(queryDto);
   }
 

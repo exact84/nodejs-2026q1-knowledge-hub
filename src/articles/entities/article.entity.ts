@@ -1,20 +1,13 @@
 import { ArticleStatus } from '../enums/article-status.enum';
 
 export interface Article {
-  id: string; // uuid v4
+  id: string;
   title: string;
   content: string;
   status: ArticleStatus;
-  authorId: string | null; // refers to User
-  categoryId: string | null; // refers to Category
-  tags: string[]; // array of tag names
-  createdAt: number; // timestamp of creation
-  updatedAt: number; // timestamp of last update
-}
-
-export interface PaginatedArticlesResponse {
-  total: number;
-  page: number;
-  limit: number;
-  data: Article[];
+  authorId: string | null;
+  categoryId: string | null;
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
 }
