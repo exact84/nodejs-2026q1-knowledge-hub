@@ -1,4 +1,4 @@
-import { User, PublicUser } from 'src/users/entities/user.entity';
+import { User, PublicUser } from '../users/entities/user.entity';
 
 export function toPublicUser(user: User): PublicUser {
   const result = { ...user };

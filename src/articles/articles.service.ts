@@ -11,7 +11,7 @@ import { ArticleStatus } from './enums/article-status.enum';
 import { ArticlesRepository } from './articles.repository';
 import { GetArticlesQueryDto } from './dto/get-articles-query.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
-import { CommentsService } from 'src/comments/comments.service';
+import { CommentsService } from '../comments/comments.service';
 import { ArticleSortBy, SortOrder } from './enums/article-sorting';
 
 @Injectable()

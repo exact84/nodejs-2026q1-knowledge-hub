@@ -7,11 +7,11 @@ import { randomUUID } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PublicUser, User } from './entities/user.entity';
 import { UserRole } from './enums/user-role.enum';
-import { toPublicUser } from 'src/helpers/toPublicUser';
+import { toPublicUser } from '../helpers/toPublicUser';
 import { UsersRepository } from './users.repository';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { ArticlesService } from 'src/articles/articles.service';
-import { CommentsService } from 'src/comments/comments.service';
+import { ArticlesService } from '../articles/articles.service';
+import { CommentsService } from '../comments/comments.service';
 
 @Injectable()
 export class UsersService {

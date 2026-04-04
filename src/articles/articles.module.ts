@@ -2,7 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { ArticlesController } from './articles.controller';
 import { ArticlesService } from './articles.service';
 import { ArticlesRepository } from './articles.repository';
-import { CommentsModule } from 'src/comments/comments.module';
+import { CommentsModule } from '../comments/comments.module';
 
 @Module({
   controllers: [ArticlesController],
