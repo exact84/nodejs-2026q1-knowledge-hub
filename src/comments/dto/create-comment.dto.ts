@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class CreateCommentDto {
-  @ApiProperty({ example: 'Great article, спасибо!' })
+  @ApiProperty({ example: 'Great article, thanks!' })
   @IsString()
   @MinLength(1)
   content: string;

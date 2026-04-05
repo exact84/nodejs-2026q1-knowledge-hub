@@ -119,7 +119,7 @@ export class ArticlesService {
     const article = this.articlesRepository.getOne(id);
 
     if (!article) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundException(`Article with id ${id} not found`);
     }
 
     return article;

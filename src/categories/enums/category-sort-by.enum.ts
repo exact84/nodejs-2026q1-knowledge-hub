@@ -1,4 +1,4 @@
 export enum CategorySortBy {
   NAME = 'name',
-  DESCRIPTION = 'createdAt',
+  DESCRIPTION = 'description',
 }
