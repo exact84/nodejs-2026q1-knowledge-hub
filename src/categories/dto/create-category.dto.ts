@@ -7,7 +7,9 @@ export class CreateCategoryDto {
   @MinLength(1)
   name: string;
 
-  @ApiProperty({ example: 'Articles about backend development and architecture' })
+  @ApiProperty({
+    example: 'Articles about backend development and architecture',
+  })
   @IsString()
   @MinLength(1)
   description: string;
