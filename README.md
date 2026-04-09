@@ -229,3 +229,52 @@ GET /articles?status=published
 - TypeScript
 - class-validator
 - Swagger (OpenAPI)
+
+## Docker
+
+### Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+The application will be available at:
+
+API: http://localhost:4000
+
+Adminer (debug profile only): http://localhost:8080
+
+To run Adminer as well:
+
+```bash
+docker compose --profile debug up --build
+```
+
+### Environment variables
+
+Create a .env file based on .env.example.
+
+Required database variables:
+
+POSTGRES_USER  
+POSTGRES_PASSWORD  
+POSTGRES_DB  
+POSTGRES_HOST  
+POSTGRES_PORT  
+
+### Docker Hub image
+
+https://hub.docker.com/r/exact84/knowledge-hub-api
+
+## Security scan
+
+Security scan was performed using Docker Scout for the final application image.
+
+Result:
+- Critical vulnerabilities: 0
+- High vulnerabilities: present in base image packages (`tar`, `minimatch`, `picomatch`)
+
+Notes:
+- Reported vulnerabilities are inherited from the official Node.js image and npm toolchain
+- They are not introduced by the application code
+- No critical vulnerabilities were detected
