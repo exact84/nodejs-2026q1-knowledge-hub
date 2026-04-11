@@ -3,10 +3,14 @@ FROM node:24 AS build
 
 WORKDIR /app
 
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 COPY package*.json ./
 RUN npm ci
 
 COPY . .
+RUN npx prisma generate
 RUN npm run build
 
 # ---------- Stage 2: production ----------
@@ -17,13 +21,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --forceRUN npm ci --omit=dev --omit=optional --no-audit --no-fund \
+RUN npm ci --omit=dev --omit=optional --no-audit --no-fund \
   && npm cache clean --force \
-  && rm -rf /root/.npm /tmp/* \
-  && rm -rf /usr/local/lib/node_modules/npm \
-  && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+  && rm -rf /root/.npm /tmp/* 
   
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 
 USER node
 

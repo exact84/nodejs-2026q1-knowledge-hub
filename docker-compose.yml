@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '${POSTGRES_PORT}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -27,6 +27,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        DATABASE_URL: ${DOCKER_DATABASE_URL}
     container_name: knowledge-hub-app
     restart: on-failure
     depends_on:
@@ -36,14 +38,20 @@ services:
       - .env
     environment:
       NODE_ENV: production
-      PORT: 4000
+      PORT: ${PORT}
+      DATABASE_URL: ${DOCKER_DATABASE_URL}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      CRYPT_SALT: ${CRYPT_SALT}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_SECRET_REFRESH_KEY: ${JWT_SECRET_REFRESH_KEY}
+      TOKEN_EXPIRE_TIME: ${TOKEN_EXPIRE_TIME}
+      TOKEN_REFRESH_EXPIRE_TIME: ${TOKEN_REFRESH_EXPIRE_TIME}
     ports:
-      - '4000:4000'
+      - '${PORT}:${PORT}'
     networks:
       - knowledge-hub-network
     healthcheck:
@@ -52,7 +60,7 @@ services:
           'CMD',
           'node',
           '-e',
-          "require('http').get('http://localhost:4000/', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+          "require('http').get('http://localhost:' + process.env.PORT + '/', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
         ]
       interval: 10s
       timeout: 5s
@@ -79,3 +87,4 @@ networks:
 
 volumes:
   postgres_data:
+  
