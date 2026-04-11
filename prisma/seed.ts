@@ -11,6 +11,24 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main(): Promise<void> {
+  const [usersCount, categoriesCount, articlesCount, commentsCount] = await Promise.all([
+    prisma.user.count(),
+    prisma.category.count(),
+    prisma.article.count(),
+    prisma.comment.count(),
+  ]);
+
+  const isEmptyDatabase =
+    usersCount === 0 &&
+    categoriesCount === 0 &&
+    articlesCount === 0 &&
+    commentsCount === 0;
+
+  if (!isEmptyDatabase) {
+    console.log('Database is not empty. Skipping seed.');
+    return;
+  }
+
   const admin = await prisma.user.create({
     data: {
       login: 'admin',
@@ -156,15 +174,16 @@ async function main(): Promise<void> {
       articleId: article3.id,
     },
   });
+
+  console.log('Seed completed.');
 }
 
 main()
   .catch((error: unknown) => {
     console.error(error);
-    process.exit(1);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
     await pool.end();
   });
-  
