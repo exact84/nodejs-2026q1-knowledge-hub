@@ -15,7 +15,7 @@ async function main(): Promise<void> {
     data: {
       login: 'admin',
       password: 'admin123',
-      role: UserRole.ADMIN,
+      role: UserRole.admin,
     },
   });
 
@@ -23,7 +23,7 @@ async function main(): Promise<void> {
     data: {
       login: 'editor',
       password: 'editor123',
-      role: UserRole.EDITOR,
+      role: UserRole.editor,
     },
   });
 
@@ -72,7 +72,7 @@ async function main(): Promise<void> {
     data: {
       title: 'Getting Started with NestJS',
       content: 'Introduction to NestJS basics.',
-      status: ArticleStatus.DRAFT,
+      status: ArticleStatus.draft,
       authorId: admin.id,
       categoryId: techCategory.id,
       tags: {
@@ -85,7 +85,7 @@ async function main(): Promise<void> {
     data: {
       title: 'Prisma with PostgreSQL',
       content: 'How to use Prisma with PostgreSQL.',
-      status: ArticleStatus.PUBLISHED,
+      status: ArticleStatus.published,
       authorId: admin.id,
       categoryId: techCategory.id,
       tags: {
@@ -98,7 +98,7 @@ async function main(): Promise<void> {
     data: {
       title: 'Docker for Backend Developers',
       content: 'Using Docker in backend development.',
-      status: ArticleStatus.PUBLISHED,
+      status: ArticleStatus.published,
       authorId: editor.id,
       categoryId: techCategory.id,
       tags: {
@@ -111,7 +111,7 @@ async function main(): Promise<void> {
     data: {
       title: 'Science News Overview',
       content: 'Recent science news and discoveries.',
-      status: ArticleStatus.ARCHIVED,
+      status: ArticleStatus.archived,
       authorId: editor.id,
       categoryId: scienceCategory.id,
       tags: {
@@ -124,7 +124,7 @@ async function main(): Promise<void> {
     data: {
       title: 'Healthy Daily Habits',
       content: 'Simple habits for a healthier life.',
-      status: ArticleStatus.DRAFT,
+      status: ArticleStatus.draft,
       authorId: admin.id,
       categoryId: lifestyleCategory.id,
       tags: {

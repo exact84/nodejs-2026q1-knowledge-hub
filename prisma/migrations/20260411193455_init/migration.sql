@@ -1,8 +1,8 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
+CREATE TYPE "UserRole" AS ENUM ('admin', 'editor', 'viewer');
 
 -- CreateEnum
-CREATE TYPE "ArticleStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+CREATE TYPE "ArticleStatus" AS ENUM ('draft', 'published', 'archived');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -68,6 +68,9 @@ CREATE TABLE "_ArticleToTag" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_login_key" ON "User"("login");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Tag_name_key" ON "Tag"("name");
