@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { ArticleStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { Article } from './entities/article.entity';
-import { ArticleStatus } from '@prisma/client';
 
 @Injectable()
 export class ArticlesRepository {
@@ -104,17 +104,33 @@ export class ArticlesRepository {
 
   async delete(id: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      await this.prisma.article.delete({
+      const articleWithTags = await tx.article.findUnique({
         where: { id },
-      });
-
-      await tx.tag.deleteMany({
-        where: {
-          articles: {
-            none: {},
+        select: {
+          tags: {
+            select: { id: true },
           },
         },
       });
+
+      const tagIds = articleWithTags?.tags.map((tag) => tag.id) ?? [];
+
+      await tx.article.delete({
+        where: { id },
+      });
+
+      if (tagIds.length > 0) {
+        await tx.tag.deleteMany({
+          where: {
+            id: {
+              in: tagIds,
+            },
+            articles: {
+              none: {},
+            },
+          },
+        });
+      }
     });
   }
 }
