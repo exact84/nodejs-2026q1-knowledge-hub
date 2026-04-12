@@ -31,7 +31,9 @@ export class ArticlesRepository {
     };
   }
 
-  async create(article: Omit<Article, 'id' | 'createdAt' | 'updatedAt'>): Promise<Article> {
+  async create(
+    article: Omit<Article, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<Article> {
     const createdArticle = await this.prisma.article.create({
       data: {
         title: article.title,
@@ -101,8 +103,18 @@ export class ArticlesRepository {
   }
 
   async delete(id: string): Promise<void> {
-    await this.prisma.article.delete({
-      where: { id },
+    await this.prisma.$transaction(async (tx) => {
+      await this.prisma.article.delete({
+        where: { id },
+      });
+
+      await tx.tag.deleteMany({
+        where: {
+          articles: {
+            none: {},
+          },
+        },
+      });
     });
   }
 }
