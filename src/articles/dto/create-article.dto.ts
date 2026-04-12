@@ -6,7 +6,7 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { ArticleStatus } from '../enums/article-status.enum';
+import { ArticleStatus } from '@prisma/client';
 
 export class CreateArticleDto {
   @ApiProperty({ example: 'NestJS Guide' })
@@ -21,7 +21,7 @@ export class CreateArticleDto {
 
   @ApiPropertyOptional({
     enum: ArticleStatus,
-    example: ArticleStatus.DRAFT,
+    example: ArticleStatus.draft,
   })
   @IsOptional()
   @IsEnum(ArticleStatus)

@@ -1,33 +1,73 @@
 import { Injectable } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { User } from './entities/user.entity';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class UsersRepository {
-  private users: User[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(user: User): User {
-    this.users.push(user);
-    return user;
+  private mapToEntity(user: {
+    id: string;
+    login: string;
+    password: string;
+    role: UserRole;
+    createdAt: Date;
+    updatedAt: Date;
+  }): User {
+    return {
+      id: user.id,
+      login: user.login,
+      password: user.password,
+      role: user.role,
+      createdAt: user.createdAt.getTime(),
+      updatedAt: user.updatedAt.getTime(),
+    };
   }
 
-  getAll(): User[] {
-    return this.users;
+  async create(
+    user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<User> {
+    const createdUser = await this.prisma.user.create({
+      data: {
+        login: user.login,
+        password: user.password,
+        role: user.role,
+      },
+    });
+
+    return this.mapToEntity(createdUser);
   }
 
-  getOne(id: string): User | undefined {
-    return this.users.find((user) => user.id === id);
+  async getAll(): Promise<User[]> {
+    const users = await this.prisma.user.findMany();
+    return users.map((user) => this.mapToEntity(user));
   }
 
-  update(user: User): User {
-    const index = this.users.findIndex(
-      (currentUser) => currentUser.id === user.id,
-    );
+  async getOne(id: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
 
-    this.users[index] = user;
-    return user;
+    return user ? this.mapToEntity(user) : null;
   }
 
-  delete(id: string): void {
-    this.users = this.users.filter((user) => user.id !== id);
+  async update(user: User): Promise<User> {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        login: user.login,
+        password: user.password,
+        role: user.role,
+      },
+    });
+
+    return this.mapToEntity(updatedUser);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.user.delete({
+      where: { id },
+    });
   }
 }

@@ -1,11 +1,8 @@
 import {
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { ArticlesService } from '../articles/articles.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { GetCommentsQueryDto } from './dto/get-comments-query.dto';
@@ -20,12 +17,11 @@ import { CommentSortBy } from './enums/comments-sorting.enum';
 export class CommentsService {
   constructor(
     private readonly commentsRepository: CommentsRepository,
-    @Inject(forwardRef(() => ArticlesService))
     private readonly articlesService: ArticlesService,
   ) {}
 
-  create(dto: CreateCommentDto): Comment {
-    const article = this.articlesService.findOneOrNull(dto.articleId);
+  async create(dto: CreateCommentDto): Promise<Comment> {
+    const article = await this.articlesService.findOneOrNull(dto.articleId);
 
     if (!article) {
       throw new UnprocessableEntityException(
@@ -33,22 +29,18 @@ export class CommentsService {
       );
     }
 
-    const comment: Comment = {
-      id: randomUUID(),
+    return this.commentsRepository.create({
       content: dto.content,
       articleId: dto.articleId,
       authorId: dto.authorId ?? null,
-      createdAt: Date.now(),
-    };
-
-    return this.commentsRepository.create(comment);
+    });
   }
 
-  getByArticleId(
+  async getByArticleId(
     queryDto: GetCommentsQueryDto,
-  ): Comment[] | PaginatedResponse<Comment> {
+  ): Promise<Comment[] | PaginatedResponse<Comment>> {
     const comments = [
-      ...this.commentsRepository.getByArticleId(queryDto.articleId),
+      ...(await this.commentsRepository.getByArticleId(queryDto.articleId)),
     ];
 
     const hasPagination =
@@ -83,8 +75,8 @@ export class CommentsService {
     return hasPagination ? paginate(comments, page, limit) : comments;
   }
 
-  getOne(id: string): Comment {
-    const comment = this.commentsRepository.getOne(id);
+  async getOne(id: string): Promise<Comment> {
+    const comment = await this.commentsRepository.getOne(id);
 
     if (!comment) {
       throw new NotFoundException(`Comment with id ${id} not found`);
@@ -93,21 +85,13 @@ export class CommentsService {
     return comment;
   }
 
-  delete(id: string): void {
-    const comment = this.commentsRepository.getOne(id);
+  async delete(id: string): Promise<void> {
+    const comment = await this.commentsRepository.getOne(id);
 
     if (!comment) {
       throw new NotFoundException(`Comment with id ${id} not found`);
     }
 
-    this.commentsRepository.delete(id);
-  }
-
-  deleteByArticleId(articleId: string): void {
-    this.commentsRepository.deleteByArticleId(articleId);
-  }
-
-  deleteByAuthorId(authorId: string): void {
-    this.commentsRepository.deleteByAuthorId(authorId);
+    await this.commentsRepository.delete(id);
   }
 }

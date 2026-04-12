@@ -1,46 +1,63 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { Comment } from './entities/comment.entity';
 
 @Injectable()
 export class CommentsRepository {
-  private comments: Comment[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  create(comments: Comment): Comment {
-    this.comments.push(comments);
-    return comments;
+  private mapToEntity(comment: {
+    id: string;
+    content: string;
+    articleId: string;
+    authorId: string | null;
+    createdAt: Date;
+  }): Comment {
+    return {
+      id: comment.id,
+      content: comment.content,
+      articleId: comment.articleId,
+      authorId: comment.authorId,
+      createdAt: comment.createdAt.getTime(),
+    };
   }
 
-  getAll(): Comment[] {
-    return this.comments;
+  async create(comment: Omit<Comment, 'id' | 'createdAt'>): Promise<Comment> {
+    const createdComment = await this.prisma.comment.create({
+      data: {
+        content: comment.content,
+        articleId: comment.articleId,
+        authorId: comment.authorId,
+      },
+    });
+
+    return this.mapToEntity(createdComment);
   }
 
-  getOne(id: string): Comment | undefined {
-    return this.comments.find((comment) => comment.id === id);
+  async getAll(): Promise<Comment[]> {
+    const comments = await this.prisma.comment.findMany();
+    return comments.map((comment) => this.mapToEntity(comment));
   }
 
-  getByArticleId(articleId: string): Comment[] {
-    return this.comments.filter((comment) => comment.articleId === articleId);
+  async getOne(id: string): Promise<Comment | null> {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id },
+    });
+
+    return comment ? this.mapToEntity(comment) : null;
   }
 
-  // update(comment: Comment): Comment {
-  //   const index = this.comments.findIndex((a) => a.id === comment.id);
-  //   this.comments[index] = comment;
-  //   return comment;
-  // }
+  async getByArticleId(articleId: string): Promise<Comment[]> {
+    const comments = await this.prisma.comment.findMany({
+      where: { articleId },
+    });
 
-  delete(id: string): void {
-    this.comments = this.comments.filter((comment) => comment.id !== id);
+    return comments.map((comment) => this.mapToEntity(comment));
   }
 
-  deleteByArticleId(articleId: string): void {
-    this.comments = this.comments.filter(
-      (comment) => comment.articleId !== articleId,
-    );
-  }
-
-  deleteByAuthorId(authorId: string): void {
-    this.comments = this.comments.filter(
-      (comment) => comment.authorId !== authorId,
-    );
+  async delete(id: string): Promise<void> {
+    await this.prisma.comment.delete({
+      where: { id },
+    });
   }
 }

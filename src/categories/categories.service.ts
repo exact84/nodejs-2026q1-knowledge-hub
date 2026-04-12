@@ -1,10 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { Category } from './entities/categories.entity';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { ArticlesService } from '../articles/articles.service';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 import { paginate } from '../common/pagination/paginate.util';
 import { SortOrder } from '../common/pagination/sort-order.enum';
@@ -15,23 +13,19 @@ import { CategorySortBy } from './enums/category-sort-by.enum';
 export class CategoriesService {
   constructor(
     private readonly categoriesRepository: CategoriesRepository,
-    private readonly articlesService: ArticlesService,
   ) {}
 
-  create(dto: CreateCategoryDto): Category {
-    const category: Category = {
-      id: randomUUID(),
+  async create(dto: CreateCategoryDto): Promise<Category> {
+    return this.categoriesRepository.create({
       name: dto.name,
       description: dto.description,
-    };
-
-    return this.categoriesRepository.create(category);
+    });
   }
 
-  getAll(
+  async getAll(
     queryDto: GetCategoriesQueryDto,
-  ): Category[] | PaginatedResponse<Category> {
-    const categories = [...this.categoriesRepository.getAll()];
+  ): Promise<Category[] | PaginatedResponse<Category>> {
+    const categories = [...(await this.categoriesRepository.getAll())];
 
     const hasPagination =
       queryDto.page !== undefined || queryDto.limit !== undefined;
@@ -49,7 +43,9 @@ export class CategoriesService {
           compareResult = a.name.localeCompare(b.name);
           break;
         case CategorySortBy.DESCRIPTION:
-          compareResult = (a.description ?? '').localeCompare(b.description);
+          compareResult = (a.description ?? '').localeCompare(
+            b.description ?? '',
+          );
           break;
       }
 
@@ -59,8 +55,8 @@ export class CategoriesService {
     return hasPagination ? paginate(categories, page, limit) : categories;
   }
 
-  getOne(id: string): Category {
-    const category = this.categoriesRepository.getOne(id);
+  async getOne(id: string): Promise<Category> {
+    const category = await this.categoriesRepository.getOne(id);
 
     if (!category) {
       throw new NotFoundException(`Category with id ${id} not found`);
@@ -69,8 +65,8 @@ export class CategoriesService {
     return category;
   }
 
-  update(id: string, dto: UpdateCategoryDto): Category {
-    const category = this.categoriesRepository.getOne(id);
+  async update(id: string, dto: UpdateCategoryDto): Promise<Category> {
+    const category = await this.categoriesRepository.getOne(id);
 
     if (!category) {
       throw new NotFoundException(`Category with id ${id} not found`);
@@ -85,14 +81,13 @@ export class CategoriesService {
     return this.categoriesRepository.update(updated);
   }
 
-  delete(id: string): void {
-    const category = this.categoriesRepository.getOne(id);
+  async delete(id: string): Promise<void> {
+    const category = await this.categoriesRepository.getOne(id);
 
     if (!category) {
       throw new NotFoundException(`Category with id ${id} not found`);
     }
 
-    this.articlesService.clearCategoryId(id);
-    this.categoriesRepository.delete(id);
+    await this.categoriesRepository.delete(id);
   }
 }

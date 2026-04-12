@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { ArticleStatus } from '../enums/article-status.enum';
+import { ArticleStatus } from '@prisma/client';
 import { ArticleSortBy } from '../enums/article-sorting.enum';
 import { BasePaginationQueryDto } from '../../common/pagination/base-pagination-query.dto';
 import { SortOrder } from '../../common/pagination/sort-order.enum';
@@ -8,7 +8,7 @@ import { SortOrder } from '../../common/pagination/sort-order.enum';
 export class GetArticlesQueryDto extends BasePaginationQueryDto {
   @ApiPropertyOptional({
     enum: ArticleStatus,
-    example: ArticleStatus.PUBLISHED,
+    example: ArticleStatus.published,
   })
   @IsOptional()
   @IsEnum(ArticleStatus)

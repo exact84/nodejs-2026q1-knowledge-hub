@@ -3,15 +3,12 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PublicUser, User } from './entities/user.entity';
-import { UserRole } from './enums/user-role.enum';
+import { UserRole } from '@prisma/client';
 import { toPublicUser } from '../helpers/toPublicUser';
 import { UsersRepository } from './users.repository';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { ArticlesService } from '../articles/articles.service';
-import { CommentsService } from '../comments/comments.service';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { paginate } from '../common/pagination/paginate.util';
@@ -20,33 +17,22 @@ import { UserSortBy } from './enums/user-sorting.enum';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly usersRepository: UsersRepository,
-    private readonly articlesService: ArticlesService,
-    private readonly commentsService: CommentsService,
-  ) {}
+  constructor(private readonly usersRepository: UsersRepository) {}
 
-  create(createUserDto: CreateUserDto): PublicUser {
-    const timestamp = Date.now();
-
-    const newUser: User = {
-      id: randomUUID(),
+  async create(createUserDto: CreateUserDto): Promise<PublicUser> {
+    const savedUser = await this.usersRepository.create({
       login: createUserDto.login,
       password: createUserDto.password,
-      role: createUserDto.role ?? UserRole.VIEWER,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
+      role: createUserDto.role ?? UserRole.viewer,
+    });
 
-    this.usersRepository.create(newUser);
-
-    return toPublicUser(newUser);
+    return toPublicUser(savedUser);
   }
 
-  getAll(
+  async getAll(
     queryDto: GetUsersQueryDto,
-  ): PublicUser[] | PaginatedResponse<PublicUser> {
-    const users = [...this.usersRepository.getAll()];
+  ): Promise<PublicUser[] | PaginatedResponse<PublicUser>> {
+    const users = [...(await this.usersRepository.getAll())];
 
     const hasPagination =
       queryDto.page !== undefined || queryDto.limit !== undefined;
@@ -82,8 +68,8 @@ export class UsersService {
     return hasPagination ? paginate(publicUsers, page, limit) : publicUsers;
   }
 
-  getOne(id: string): PublicUser {
-    const user = this.usersRepository.getOne(id);
+  async getOne(id: string): Promise<PublicUser> {
+    const user = await this.usersRepository.getOne(id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -92,8 +78,11 @@ export class UsersService {
     return toPublicUser(user);
   }
 
-  updatePassword(id: string, updatePasswordDto: UpdatePasswordDto): PublicUser {
-    const user = this.usersRepository.getOne(id);
+  async updatePassword(
+    id: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<PublicUser> {
+    const user = await this.usersRepository.getOne(id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -106,23 +95,20 @@ export class UsersService {
     const updatedUser: User = {
       ...user,
       password: updatePasswordDto.newPassword,
-      updatedAt: Date.now(),
     };
 
-    const savedUser = this.usersRepository.update(updatedUser);
+    const savedUser = await this.usersRepository.update(updatedUser);
 
     return toPublicUser(savedUser);
   }
 
-  delete(id: string): void {
-    const user = this.usersRepository.getOne(id);
+  async delete(id: string): Promise<void> {
+    const user = await this.usersRepository.getOne(id);
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    this.articlesService.clearAuthorId(id);
-    this.commentsService.deleteByAuthorId(id);
-    this.usersRepository.delete(id);
+    await this.usersRepository.delete(id);
   }
 }

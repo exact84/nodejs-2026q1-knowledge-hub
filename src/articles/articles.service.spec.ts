@@ -1,7 +1,7 @@
 import { ArticlesService } from './articles.service';
 import { ArticleSortBy } from './enums/article-sorting.enum';
 import { Article } from './entities/article.entity';
-import { ArticleStatus } from './enums/article-status.enum';
+import { ArticleStatus } from '@prisma/client';
 import { CommentsService } from '../comments/comments.service';
 import { ArticlesRepository } from './articles.repository';
 import { SortOrder } from '../common/pagination/sort-order.enum';
@@ -11,7 +11,7 @@ class FakeArticlesRepository implements Pick<ArticlesRepository, 'getAll'> {
     {
       id: '1',
       title: 'C article',
-      status: ArticleStatus.DRAFT,
+      status: ArticleStatus.draft,
       createdAt: 300,
       categoryId: 'cat-1',
       tags: ['nestjs'],
@@ -22,7 +22,7 @@ class FakeArticlesRepository implements Pick<ArticlesRepository, 'getAll'> {
     {
       id: '2',
       title: 'A article',
-      status: ArticleStatus.PUBLISHED,
+      status: ArticleStatus.published,
       createdAt: 100,
       categoryId: 'cat-1',
       tags: ['node'],
@@ -33,7 +33,7 @@ class FakeArticlesRepository implements Pick<ArticlesRepository, 'getAll'> {
     {
       id: '3',
       title: 'B article',
-      status: ArticleStatus.ARCHIVED,
+      status: ArticleStatus.archived,
       createdAt: 200,
       categoryId: 'cat-2',
       tags: ['ts'],
@@ -43,8 +43,8 @@ class FakeArticlesRepository implements Pick<ArticlesRepository, 'getAll'> {
     },
   ];
 
-  getAll(): Article[] {
-    return this.articles;
+  async getAll(): Promise<Article[]> {
+    return await this.articles;
   }
 }
 
@@ -55,13 +55,12 @@ describe('ArticlesService', () => {
 
   beforeEach(() => {
     service = new ArticlesService(
-      new FakeArticlesRepository() as unknown as ArticlesRepository,
-      new FakeCommentsService() as CommentsService,
+      new FakeArticlesRepository() as unknown as ArticlesRepository
     );
   });
 
-  it('should sort articles by title ascending', () => {
-    const result = service.getAll({
+  it('should sort articles by title ascending', async () => {
+    const result = await service.getAll({
       sortBy: ArticleSortBy.TITLE,
       order: SortOrder.ASC,
     });
@@ -77,8 +76,8 @@ describe('ArticlesService', () => {
     ]);
   });
 
-  it('should return paginated result', () => {
-    const result = service.getAll({
+  it('should return paginated result', async () => {
+    const result = await service.getAll({
       page: 1,
       limit: 2,
     });
@@ -93,8 +92,8 @@ describe('ArticlesService', () => {
     expect(result.data.length).toBe(2);
   });
 
-  it('should sort before pagination', () => {
-    const result = service.getAll({
+  it('should sort before pagination', async () => {
+    const result = await service.getAll({
       sortBy: ArticleSortBy.TITLE,
       order: SortOrder.ASC,
       page: 1,
@@ -108,8 +107,8 @@ describe('ArticlesService', () => {
     expect(result.data.map((a) => a.title)).toEqual(['A article', 'B article']);
   });
 
-  it('should return second page correctly', () => {
-    const result = service.getAll({
+  it('should return second page correctly', async () => {
+    const result = await service.getAll({
       page: 2,
       limit: 2,
     });

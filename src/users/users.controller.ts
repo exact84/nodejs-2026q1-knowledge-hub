@@ -22,33 +22,35 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto): PublicUser {
+  async create(@Body() createUserDto: CreateUserDto): Promise<PublicUser> {
     return this.usersService.create(createUserDto);
   }
 
   @Get(':id')
-  getOne(@Param('id', new ParseUUIDPipe()) id: string): PublicUser {
+  async getOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<PublicUser> {
     return this.usersService.getOne(id);
   }
 
   @Get()
-  getAll(
+  async getAll(
     @Query() queryDto: GetUsersQueryDto,
-  ): PublicUser[] | PaginatedResponse<PublicUser> {
+  ): Promise<PublicUser[] | PaginatedResponse<PublicUser>> {
     return this.usersService.getAll(queryDto);
   }
 
   @Put(':id')
-  updatePassword(
+  async updatePassword(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
-  ): PublicUser {
+  ): Promise<PublicUser> {
     return this.usersService.updatePassword(id, updatePasswordDto);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id', new ParseUUIDPipe()) id: string): void {
-    this.usersService.delete(id);
+  async delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    return this.usersService.delete(id);
   }
 }

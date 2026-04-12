@@ -20,25 +20,27 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get()
-  getByArticleId(
+  async getByArticleId(
     @Query() queryDto: GetCommentsQueryDto,
-  ): Comment[] | PaginatedResponse<Comment> {
+  ): Promise<Comment[] | PaginatedResponse<Comment>> {
     return this.commentsService.getByArticleId(queryDto);
   }
 
   @Get(':id')
-  getOne(@Param('id', new ParseUUIDPipe()) id: string): Comment {
+  async getOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<Comment> {
     return this.commentsService.getOne(id);
   }
 
   @Post()
-  create(@Body() dto: CreateCommentDto): Comment {
+  async create(@Body() dto: CreateCommentDto): Promise<Comment> {
     return this.commentsService.create(dto);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id', new ParseUUIDPipe()) id: string): void {
-    this.commentsService.delete(id);
+  async delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    return this.commentsService.delete(id);
   }
 }

@@ -22,12 +22,12 @@ export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
 
   @Post()
-  create(@Body() dto: CreateArticleDto): Article {
+  create(@Body() dto: CreateArticleDto): Promise<Article> {
     return this.articlesService.create(dto);
   }
 
   @Get(':id')
-  getOne(@Param('id', new ParseUUIDPipe()) id: string): Article {
+  getOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Article> {
     return this.articlesService.getOne(id);
   }
 
@@ -35,20 +35,20 @@ export class ArticlesController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateArticleDto,
-  ): Article {
+  ): Promise<Article> {
     return this.articlesService.update(id, dto);
   }
 
   @Get()
   getAll(
     @Query() queryDto: GetArticlesQueryDto,
-  ): Article[] | PaginatedResponse<Article> {
+  ): Promise<Article[] | PaginatedResponse<Article>> {
     return this.articlesService.getAll(queryDto);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id', new ParseUUIDPipe()) id: string): void {
-    this.articlesService.delete(id);
+  delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    return this.articlesService.delete(id);
   }
 }

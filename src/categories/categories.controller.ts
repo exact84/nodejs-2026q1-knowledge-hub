@@ -22,19 +22,19 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  create(@Body() dto: CreateCategoryDto): Category {
+  create(@Body() dto: CreateCategoryDto): Promise<Category> {
     return this.categoriesService.create(dto);
   }
 
   @Get()
   getAll(
     @Query() queryDto: GetCategoriesQueryDto,
-  ): Category[] | PaginatedResponse<Category> {
+  ): Promise<Category[] | PaginatedResponse<Category>> {
     return this.categoriesService.getAll(queryDto);
   }
 
   @Get(':id')
-  getOne(@Param('id', new ParseUUIDPipe()) id: string): Category {
+  getOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Category> {
     return this.categoriesService.getOne(id);
   }
 
@@ -42,13 +42,13 @@ export class CategoriesController {
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateCategoryDto,
-  ): Category {
+  ): Promise<Category> {
     return this.categoriesService.update(id, dto);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  delete(@Param('id', new ParseUUIDPipe()) id: string): void {
-    this.categoriesService.delete(id);
+  delete(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+    return this.categoriesService.delete(id);
   }
 }
