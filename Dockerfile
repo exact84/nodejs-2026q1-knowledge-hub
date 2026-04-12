@@ -17,7 +17,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --forceRUN npm ci --omit=dev --omit=optional --no-audit --no-fund \
+RUN npm ci --omit=dev --omit=optional --no-audit --no-fund \
   && npm cache clean --force \
   && rm -rf /root/.npm /tmp/* \
   && rm -rf /usr/local/lib/node_modules/npm \
