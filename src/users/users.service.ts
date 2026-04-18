@@ -14,15 +14,23 @@ import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { paginate } from '../common/pagination/paginate.util';
 import { SortOrder } from '../common/pagination/sort-order.enum';
 import { UserSortBy } from './enums/user-sorting.enum';
+import * as bcrypt from 'bcryptjs';
+
+const PASSWORD_SALT_ROUNDS = 10;
 
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   async create(createUserDto: CreateUserDto): Promise<PublicUser> {
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password,
+      PASSWORD_SALT_ROUNDS,
+    );
+
     const savedUser = await this.usersRepository.create({
       login: createUserDto.login,
-      password: createUserDto.password,
+      password: hashedPassword,
       role: createUserDto.role ?? UserRole.viewer,
     });
 
@@ -84,17 +92,27 @@ export class UsersService {
   ): Promise<PublicUser> {
     const user = await this.usersRepository.getOne(id);
 
+    const hashedPassword = await bcrypt.hash(
+      updatePasswordDto.newPassword,
+      PASSWORD_SALT_ROUNDS,
+    );
+
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    if (user.password !== updatePasswordDto.oldPassword) {
+    const isMatch = await bcrypt.compare(
+      updatePasswordDto.oldPassword,
+      user.password,
+    );
+
+    if (isMatch) {
       throw new ForbiddenException('Old password is wrong');
     }
 
     const updatedUser: User = {
       ...user,
-      password: updatePasswordDto.newPassword,
+      password: hashedPassword,
     };
 
     const savedUser = await this.usersRepository.update(updatedUser);
