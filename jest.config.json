@@ -5,8 +5,5 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "testMatch": [
-    "<rootDir>/test/*.spec.ts",
-    "<rootDir>/src/articles/**/*.spec.ts"
-  ]
+  "globalSetup": "<rootDir>/setup/seedAdmin.ts"
 }
