@@ -7,94 +7,115 @@ Features:
 - CRUD operations for all entities
 - Pagination and sorting for list endpoints
 - Filtering for selected endpoints
-- OpenAPI documentation available at /doc
+- JWT authentication with refresh tokens
+- Role-based access control (RBAC)
+- Rate limiting for auth endpoints
+- OpenAPI documentation available at `/doc`
 
 ## Downloading
 
-```
+```bash
 git clone https://github.com/exact84/nodejs-2026q1-knowledge-hub
 ```
 
-### Environment variables
+## Environment variables
 
-Create a .env file based on .env.example.
+Create a `.env` file based on `.env.example`.
 
-Required database variables:
+Required variables:
 
-PORT
-POSTGRES_USER  
-POSTGRES_PASSWORD  
-POSTGRES_DB  
-POSTGRES_HOST  
-POSTGRES_PORT  
-DATABASE_URL
-DOCKER_DATABASE_URL
+- `PORT`
+- `CRYPT_SALT`
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `JWT_ACCESS_TTL`
+- `JWT_REFRESH_TTL`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `POSTGRES_HOST`
+- `POSTGRES_PORT`
+- `DATABASE_URL`
+- `DOCKER_DATABASE_URL`
 
 ## Installing NPM modules
 
-```
+```bash
 npm install
 ```
 
-## Running the Project
+## Running the project
 
-```
+```bash
 docker compose up --build
 ```
 
 This will automatically:
 
 - start PostgreSQL
-- apply all Prisma migrations (prisma migrate deploy)
-- run database seed (prisma db seed)
+- apply all Prisma migrations (`prisma migrate deploy`)
+- run database seed (`prisma db seed`)
 - start the NestJS application
 
-After starting the app on port (4000 as default) you can open
-in your browser OpenAPI documentation by typing http://localhost:4000/doc/
+After starting the app on port `4000` by default, OpenAPI documentation will be available at:
+
+`http://localhost:4000/doc`
 
 ## Check database in Adminer
 
 Start Adminer:
 
-```
+```bash
 docker compose --profile debug up -d adminer
 ```
 
 Then open:
 
-http://localhost:8080
+`http://localhost:8080`
 
 Use these credentials:
 
-System: PostgreSQL  
-Server: db  
-Username: value from POSTGRES_USER  
-Password: value from POSTGRES_PASSWORD  
-Database: value from POSTGRES_DB
+- System: `PostgreSQL`
+- Server: `db`
+- Username: value from `POSTGRES_USER`
+- Password: value from `POSTGRES_PASSWORD`
+- Database: value from `POSTGRES_DB`
 
 ## Testing
 
-After application running open new terminal and enter:
+After the application is running, open a new terminal and run:
 
-To run all tests without authorization
+To run all tests with authorization:
 
-```
+```bash
 npm run test
 ```
 
-To run only one of all test suites
+To run auth-specific tests:
 
-```
-npm run test -- <path to suite>
+```bash
+npm run test:auth
 ```
 
-### Auto-fix and format
+To run refresh tests:
 
+```bash
+npm run test:refresh
 ```
+
+To run RBAC tests:
+
+```bash
+npm run test:rbac
+```
+
+## Auto-fix and format
+
+```bash
 npm run lint
 ```
 
-```
+```bash
 npm run format
 ```
 
@@ -102,118 +123,156 @@ npm run format
 
 OpenAPI documentation is available at:
 
-http://localhost:3000/doc
+`http://localhost:4000/doc`
 
 ## Endpoints
 
+### Auth
+
+- `POST /auth/signup`
+  Creates a new user with role `viewer`
+  -> `201 Created`
+  -> `400 Bad Request`
+
+- `POST /auth/login`
+  Authenticates user by `login` and `password`, returns `accessToken` and `refreshToken`
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `403 Forbidden`
+
+- `POST /auth/refresh`
+  Validates refresh token and returns a new token pair
+  -> `200 OK`
+  -> `401 Unauthorized`
+  -> `403 Forbidden`
+
+- `POST /auth/logout`
+  Invalidates the provided refresh token
+  -> `200 OK`
+  -> `401 Unauthorized`
+  -> `403 Forbidden`
+
 ### Users (/user)
 
-- GET /user -
-  Get all users  
-  → 200 OK
+- `GET /user`
+  Get all users
+  -> `200 OK`
 
-- GET /user/:id -
-  Get user by ID  
-  → 200 OK  
-  → 400 Bad Request (invalid UUID)  
-  → 404 Not Found
+- `GET /user/:id`
+  Get user by ID
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
-- POST /user -
-  Create a new user  
-  → 201 Created  
-  → 400 Bad Request
+- `POST /user`
+  Create a new user
+  -> `201 Created`
+  -> `400 Bad Request`
 
-- PUT /user/:id -
-  Update user password  
-  → 200 OK  
-  → 400 Bad Request  
-  → 403 Forbidden (incorrect old password)  
-  → 404 Not Found
+- `PUT /user/:id`
+  Update user password
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `403 Forbidden`
+  -> `404 Not Found`
 
-- DELETE /user/:id -
-  Delete user  
-  → 204 No Content  
-  → 400 Bad Request  
-  → 404 Not Found
+- `DELETE /user/:id`
+  Delete user
+  -> `204 No Content`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
 ### Articles (/article)
 
-- GET /article -
-  Get all articles  
-  Supports optional query parameters: status, categoryId, tag  
-  → 200 OK
+- `GET /article`
+  Get all articles
+  Supports optional query parameters: `status`, `categoryId`, `tag`
+  -> `200 OK`
 
-- GET /article/:id -
-  Get article by ID  
-  → 200 OK  
-  → 400 Bad Request  
-  → 404 Not Found
+- `GET /article/:id`
+  Get article by ID
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
-- POST /article -
-  Create a new article  
-  → 201 Created  
-  → 400 Bad Request
+- `POST /article`
+  Create a new article
+  -> `201 Created`
+  -> `400 Bad Request`
 
-- PUT /article/:id -
-  Update article  
-  → 200 OK  
-  → 400 Bad Request  
-  → 404 Not Found
+- `PUT /article/:id`
+  Update article
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
-- DELETE /article/:id -
-  Delete article  
-  → 204 No Content  
-  → 400 Bad Request  
-  → 404 Not Found
+- `DELETE /article/:id`
+  Delete article
+  -> `204 No Content`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
 ### Categories (/category)
 
-- GET /category -
-  Get all categories  
-  → 200
+- `GET /category`
+  Get all categories
+  -> `200 OK`
 
-- GET /category/:id -
-  Get category by ID  
-  → 200 OK  
-  → 400 Bad Request  
-  → 404 Not Found
+- `GET /category/:id`
+  Get category by ID
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
-- POST /category -
-  Create a new category  
-  → 201 Created  
-  → 400 Bad Request
+- `POST /category`
+  Create a new category
+  -> `201 Created`
+  -> `400 Bad Request`
 
-- PUT /category/:id -
-  Update category  
-  → 200 OK  
-  → 400 Bad Request  
-  → 404 Not Found
+- `PUT /category/:id`
+  Update category
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
-- DELETE /category/:id -
-  Delete category  
-  → 204 No Content  
-  → 400 Bad Request  
-  → 404 Not Found
+- `DELETE /category/:id`
+  Delete category
+  -> `204 No Content`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
 ### Comments (/comment)
 
-- GET /comment?articleId={articleId} -
-  Get comments for a specific article  
-  → 200 OK  
-  → 400 Bad Request (missing articleId)
+- `GET /comment?articleId={articleId}`
+  Get comments for a specific article
+  -> `200 OK`
+  -> `400 Bad Request`
 
-- POST /comment -
-  Create a new comment  
-  Required fields: content, articleId  
-  → 201 Created  
-  → 400 Bad Request  
-  → 422 Unprocessable Entity (article does not exist)
+- `GET /comment/:id`
+  Get comment by ID
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
-- DELETE /comment/:id -
-  Delete comment  
-  → 204 No Content  
-  → 400 Bad Request  
-  → 404 Not Found
+- `POST /comment`
+  Create a new comment
+  Required fields: `content`, `articleId`
+  -> `201 Created`
+  -> `400 Bad Request`
+  -> `422 Unprocessable Entity`
+
+- `PUT /comment/:id`
+  Update comment
+  -> `200 OK`
+  -> `400 Bad Request`
+  -> `404 Not Found`
+  -> `422 Unprocessable Entity`
+
+- `DELETE /comment/:id`
+  Delete comment
+  -> `204 No Content`
+  -> `400 Bad Request`
+  -> `404 Not Found`
 
 ## Pagination and Sorting
 
@@ -221,52 +280,72 @@ All list endpoints support pagination and sorting via query parameters.
 
 ### Pagination
 
-- `page` — page number (default: 1)
-- `limit` — number of items per page (default: 10)
+- `page` - page number (default: `1`)
+- `limit` - number of items per page (default: `10`)
 
 Example:
 
 ```http
-GET /articles?page=1&limit=10
+GET /article?page=1&limit=10
 ```
 
 Response:
 
-```
+```json
 {
   "total": 100,
   "page": 1,
   "limit": 10,
-  "data": [...]
+  "data": []
 }
 ```
 
 ### Sorting
 
-sortBy — field to sort by  
-order — asc or desc
+- `sortBy` - field to sort by
+- `order` - `asc` or `desc`
 
 Example:
 
-```
-GET /articles?sortBy=createdAt&order=desc
+```http
+GET /article?sortBy=createdAt&order=desc
 ```
 
 ## Filtering
 
 Some endpoints support filtering.
 
-Example:
+Examples:
 
 ```http
-GET /articles?status=published
+GET /article?status=published
 ```
+
+```http
+GET /article?categoryId=<uuid>
+```
+
+```http
+GET /article?tag=nodejs
+```
+
+## Security
+
+- Passwords are hashed with `bcryptjs` using `CRYPT_SALT` from `.env`
+- Access token payload contains `userId`, `login`, and `role`
+- Refresh tokens are used to obtain a new token pair
+- Logout invalidates refresh tokens
+- Authentication is required for all routes except `/`, `/doc`, `/auth/signup`, `/auth/login`, and `/auth/refresh`
+- RBAC is implemented for `viewer`, `editor`, and `admin`
+- Rate limiting is enabled for `/auth/signup` and `/auth/login`
 
 ## Tech Stack
 
 - Node.js
 - NestJS
 - TypeScript
+- Prisma
+- PostgreSQL
 - class-validator
 - Swagger (OpenAPI)
 
@@ -280,9 +359,8 @@ docker compose up --build
 
 The application will be available at:
 
-API: http://localhost:4000
-
-Adminer (debug profile only): http://localhost:8080
+- API: `http://localhost:4000`
+- Adminer (debug profile only): `http://localhost:8080`
 
 To run Adminer as well:
 
@@ -300,7 +378,7 @@ Security scan was performed using Docker Scout for the final application image.
 
 Result:
 
-- Critical vulnerabilities: 0
+- Critical vulnerabilities: `0`
 - High vulnerabilities: present in base image packages (`tar`, `minimatch`, `picomatch`)
 
 Notes:
