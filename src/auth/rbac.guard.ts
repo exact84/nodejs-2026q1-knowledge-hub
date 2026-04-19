@@ -91,15 +91,12 @@ export class RbacGuard implements CanActivate {
       return true;
     }
 
-    if (request.method === 'PUT' || request.method === 'DELETE') {
+    if (request.method === 'PUT') {
       const articleId = request.params.id;
       const article = await this.articlesService.findOneOrNull(articleId);
 
       if (article?.authorId === userId) {
-        if (request.method === 'PUT') {
-          request.body.authorId = userId;
-        }
-
+        request.body.authorId = userId;
         return true;
       }
     }
@@ -116,11 +113,12 @@ export class RbacGuard implements CanActivate {
       return true;
     }
 
-    if (request.method === 'DELETE') {
+    if (request.method === 'PUT') {
       const commentId = request.params.id;
       const comment = await this.commentsService.findOneOrNull(commentId);
 
       if (comment?.authorId === userId) {
+        request.body.authorId = userId;
         return true;
       }
     }

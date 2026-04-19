@@ -55,6 +55,19 @@ export class CommentsRepository {
     return comments.map((comment) => this.mapToEntity(comment));
   }
 
+  async update(comment: Omit<Comment, 'createdAt'>): Promise<Comment> {
+    const updatedComment = await this.prisma.comment.update({
+      where: { id: comment.id },
+      data: {
+        content: comment.content,
+        articleId: comment.articleId,
+        authorId: comment.authorId,
+      },
+    });
+
+    return this.mapToEntity(updatedComment);
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.comment.delete({
       where: { id },

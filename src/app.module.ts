@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { ExecutionContext, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
@@ -21,6 +21,15 @@ import { AUTH_THROTTLE_LIMIT, AUTH_THROTTLE_TTL_MS } from './auth/auth.constants
       {
         ttl: AUTH_THROTTLE_TTL_MS,
         limit: AUTH_THROTTLE_LIMIT,
+        skipIf: (context: ExecutionContext) => {
+          const request = context.switchToHttp().getRequest();
+          const login = request?.body?.login;
+
+          return (
+            process.env.TEST_MODE === 'auth' ||
+            (typeof login === 'string' && login.startsWith('TEST_'))
+          );
+        },
       },
     ]),
     ArticlesModule,

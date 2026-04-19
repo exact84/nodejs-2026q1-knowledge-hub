@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -14,6 +15,7 @@ import { GetCommentsQueryDto } from './dto/get-comments-query.dto';
 import { Comment } from './entities/comment.entity';
 import { CommentsService } from './comments.service';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Controller('comment')
 export class CommentsController {
@@ -36,6 +38,14 @@ export class CommentsController {
   @Post()
   async create(@Body() dto: CreateCommentDto): Promise<Comment> {
     return this.commentsService.create(dto);
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateCommentDto,
+  ): Promise<Comment> {
+    return this.commentsService.update(id, dto);
   }
 
   @Delete(':id')

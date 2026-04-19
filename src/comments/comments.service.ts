@@ -12,6 +12,7 @@ import { PaginatedResponse } from '../common/pagination/paginated-response.type'
 import { SortOrder } from '../common/pagination/sort-order.enum';
 import { paginate } from '../common/pagination/paginate.util';
 import { CommentSortBy } from './enums/comments-sorting.enum';
+import { UpdateCommentDto } from './dto/update-comment.dto';
 
 @Injectable()
 export class CommentsService {
@@ -87,6 +88,31 @@ export class CommentsService {
 
   async findOneOrNull(id: string): Promise<Comment | null> {
     return this.commentsRepository.getOne(id);
+  }
+
+  async update(id: string, dto: UpdateCommentDto): Promise<Comment> {
+    const comment = await this.commentsRepository.getOne(id);
+
+    if (!comment) {
+      throw new NotFoundException(`Comment with id ${id} not found`);
+    }
+
+    if (dto.articleId) {
+      const article = await this.articlesService.findOneOrNull(dto.articleId);
+
+      if (!article) {
+        throw new UnprocessableEntityException(
+          `Article with id ${dto.articleId} does not exist`,
+        );
+      }
+    }
+
+    return this.commentsRepository.update({
+      ...comment,
+      ...(dto.content !== undefined && { content: dto.content }),
+      ...(dto.articleId !== undefined && { articleId: dto.articleId }),
+      ...(dto.authorId !== undefined && { authorId: dto.authorId }),
+    });
   }
 
   async delete(id: string): Promise<void> {
