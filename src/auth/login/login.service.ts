@@ -2,14 +2,14 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { UsersService } from 'src/users/users.service';
 import * as bcrypt from 'bcryptjs';
-import { JwtService } from '@nestjs/jwt';
 import { Login } from './entities/login.entity';
+import { TokensService } from 'src/auth/tokens/tokens.service';
 
 @Injectable()
 export class LoginService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
+    private readonly tokensService: TokensService,
   ) {}
 
   async login(loginDto: LoginDto): Promise<Login> {
@@ -34,20 +34,6 @@ export class LoginService {
       role: user.role,
     };
 
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_SECRET,
-        expiresIn: process.env.JWT_ACCESS_TTL,
-      }),
-      this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: process.env.JWT_REFRESH_TTL,
-      }),
-    ]);
-
-    return {
-      accessToken,
-      refreshToken,
-    };
+    return this.tokensService.generateTokenPair(payload);
   }
 }

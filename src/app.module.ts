@@ -7,6 +7,7 @@ import { CommentsModule } from './comments/comments.module';
 import { SignupModule } from './auth/signup/signup.module';
 import { LoginModule } from './auth/login/login.module';
 import { RefreshModule } from './auth/refresh/refresh.module';
+import { LogoutModule } from './auth/logout/logout.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { RefreshModule } from './auth/refresh/refresh.module';
     SignupModule,
     LoginModule,
     RefreshModule,
+    LogoutModule,
   ],
   controllers: [AppController],
   providers: [],

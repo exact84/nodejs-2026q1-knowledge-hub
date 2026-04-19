@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { RefreshService } from './refresh.service';
-import { RefreshController } from './refresh.controller';
+import { LogoutService } from './logout.service';
+import { LogoutController } from './logout.controller';
 import { UsersModule } from 'src/users/users.module';
 import { TokensModule } from 'src/auth/tokens/tokens.module';
 
 @Module({
   imports: [UsersModule, TokensModule],
-  controllers: [RefreshController],
-  providers: [RefreshService],
+  controllers: [LogoutController],
+  providers: [LogoutService],
 })
-export class RefreshModule {}
+export class LogoutModule {}

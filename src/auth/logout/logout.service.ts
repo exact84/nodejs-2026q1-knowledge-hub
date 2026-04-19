@@ -3,41 +3,36 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { LogoutDto } from './dto/logout.dto';
+import { Logout } from './entities/logout.entity';
 import { UsersService } from 'src/users/users.service';
-import { RefreshDto } from './dto/refresh.dto';
-import { Refresh } from './entities/refresh.entity';
 import { TokensService } from 'src/auth/tokens/tokens.service';
 
 @Injectable()
-export class RefreshService {
+export class LogoutService {
   constructor(
     private readonly usersService: UsersService,
     private readonly tokensService: TokensService,
   ) {}
 
-  async refresh(refreshDto: RefreshDto): Promise<Refresh> {
-    if (!refreshDto?.refreshToken) {
+  async logout(logoutDto: LogoutDto): Promise<Logout> {
+    if (!logoutDto?.refreshToken) {
       throw new UnauthorizedException('Refresh token is required');
     }
 
     const payload = await this.tokensService.verifyRefreshToken(
-      refreshDto.refreshToken,
+      logoutDto.refreshToken,
     );
-
     const user = await this.usersService.getByLogin(payload.login);
 
     if (!user || user.id !== payload.userId) {
       throw new ForbiddenException('Refresh token is invalid or expired');
     }
 
-    const nextPayload = {
-      userId: user.id,
-      login: user.login,
-      role: user.role,
+    this.tokensService.revokeRefreshToken(logoutDto.refreshToken);
+
+    return {
+      success: true,
     };
-
-    this.tokensService.revokeRefreshToken(refreshDto.refreshToken);
-
-    return this.tokensService.generateTokenPair(nextPayload);
   }
 }
