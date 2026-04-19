@@ -52,6 +52,14 @@ export class UsersRepository {
     return user ? this.mapToEntity(user) : null;
   }
 
+  async getByLogin(login: string): Promise<User | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { login },
+    });
+
+    return user ? this.mapToEntity(user) : null;
+  }
+
   async update(user: User): Promise<User> {
     const updatedUser = await this.prisma.user.update({
       where: { id: user.id },

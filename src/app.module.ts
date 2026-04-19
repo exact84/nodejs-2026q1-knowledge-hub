@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { CategoriesModule } from './categories/categories.module';
 import { CommentsModule } from './comments/comments.module';
 import { SignupModule } from './auth/signup/signup.module';
+import { LoginModule } from './auth/login/login.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SignupModule } from './auth/signup/signup.module';
     CategoriesModule,
     CommentsModule,
     SignupModule,
+    LoginModule,
   ],
   controllers: [AppController],
   providers: [],

@@ -86,16 +86,15 @@ export class UsersService {
     return toPublicUser(user);
   }
 
+  async getByLogin(login: string): Promise<User | null> {
+    return this.usersRepository.getByLogin(login);
+  }
+
   async updatePassword(
     id: string,
     updatePasswordDto: UpdatePasswordDto,
   ): Promise<PublicUser> {
     const user = await this.usersRepository.getOne(id);
-
-    const hashedPassword = await bcrypt.hash(
-      updatePasswordDto.newPassword,
-      PASSWORD_SALT_ROUNDS,
-    );
 
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
@@ -106,9 +105,14 @@ export class UsersService {
       user.password,
     );
 
-    if (isMatch) {
+    if (!isMatch) {
       throw new ForbiddenException('Old password is wrong');
     }
+
+    const hashedPassword = await bcrypt.hash(
+      updatePasswordDto.newPassword,
+      PASSWORD_SALT_ROUNDS,
+    );
 
     const updatedUser: User = {
       ...user,
