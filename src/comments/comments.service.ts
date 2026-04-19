@@ -85,6 +85,10 @@ export class CommentsService {
     return comment;
   }
 
+  async findOneOrNull(id: string): Promise<Comment | null> {
+    return this.commentsRepository.getOne(id);
+  }
+
   async delete(id: string): Promise<void> {
     const comment = await this.commentsRepository.getOne(id);
 
