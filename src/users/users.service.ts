@@ -16,16 +16,16 @@ import { SortOrder } from '../common/pagination/sort-order.enum';
 import { UserSortBy } from './enums/user-sorting.enum';
 import * as bcrypt from 'bcryptjs';
 
-const PASSWORD_SALT_ROUNDS = 10;
-
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   async create(createUserDto: CreateUserDto): Promise<PublicUser> {
+    const passwordSaltRounds = Number(process.env.CRYPT_SALT);
+
     const hashedPassword = await bcrypt.hash(
       createUserDto.password,
-      PASSWORD_SALT_ROUNDS,
+      passwordSaltRounds,
     );
 
     const savedUser = await this.usersRepository.create({
@@ -109,9 +109,11 @@ export class UsersService {
       throw new ForbiddenException('Old password is wrong');
     }
 
+    const passwordSaltRounds = Number(process.env.CRYPT_SALT);
+
     const hashedPassword = await bcrypt.hash(
       updatePasswordDto.newPassword,
-      PASSWORD_SALT_ROUNDS,
+      passwordSaltRounds,
     );
 
     const updatedUser: User = {
