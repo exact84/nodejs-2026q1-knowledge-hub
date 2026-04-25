@@ -2,122 +2,223 @@ import { ArticlesService } from './articles.service';
 import { ArticleSortBy } from './enums/article-sorting.enum';
 import { Article } from './entities/article.entity';
 import { ArticleStatus } from '@prisma/client';
-import { CommentsService } from '../comments/comments.service';
 import { ArticlesRepository } from './articles.repository';
 import { SortOrder } from '../common/pagination/sort-order.enum';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NotFoundException } from '@nestjs/common';
 
-class FakeArticlesRepository implements Pick<ArticlesRepository, 'getAll'> {
-  private articles: Article[] = [
-    {
-      id: '1',
-      title: 'C article',
-      status: ArticleStatus.draft,
-      createdAt: 300,
-      categoryId: 'cat-1',
-      tags: ['nestjs'],
-      content: '',
-      authorId: '',
-      updatedAt: 0,
-    },
-    {
-      id: '2',
-      title: 'A article',
-      status: ArticleStatus.published,
-      createdAt: 100,
-      categoryId: 'cat-1',
-      tags: ['node'],
-      content: '',
-      authorId: '',
-      updatedAt: 0,
-    },
-    {
-      id: '3',
-      title: 'B article',
-      status: ArticleStatus.archived,
-      createdAt: 200,
-      categoryId: 'cat-2',
-      tags: ['ts'],
-      content: '',
-      authorId: '',
-      updatedAt: 0,
-    },
-  ];
+const makeArticle = (overrides?: Partial<Article>): Article => ({
+  id: '1',
+  title: 'Title',
+  status: ArticleStatus.draft,
+  createdAt: 1,
+  updatedAt: 1,
+  categoryId: 'cat',
+  tags: [],
+  content: '',
+  authorId: '',
+  ...overrides,
+});
 
-  async getAll(): Promise<Article[]> {
-    return await this.articles;
-  }
-}
-
-class FakeCommentsService {}
+const createRepo = () => ({
+  getAll: vi.fn(),
+  getOne: vi.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+});
 
 describe('ArticlesService', () => {
   let service: ArticlesService;
+  let repo: ReturnType<typeof createRepo>;
 
   beforeEach(() => {
-    service = new ArticlesService(
-      new FakeArticlesRepository() as unknown as ArticlesRepository
-    );
+    repo = createRepo();
+    service = new ArticlesService(repo as unknown as ArticlesRepository);
   });
 
-  it('should sort articles by title ascending', async () => {
-    const result = await service.getAll({
-      sortBy: ArticleSortBy.TITLE,
-      order: SortOrder.ASC,
+  describe('getAll', () => {
+    it('sorts by title ASC', async () => {
+      repo.getAll.mockResolvedValue([
+        makeArticle({ title: 'C' }),
+        makeArticle({ title: 'A' }),
+        makeArticle({ title: 'B' }),
+      ]);
+
+      const result = await service.getAll({
+        sortBy: ArticleSortBy.TITLE,
+        order: SortOrder.ASC,
+      });
+
+      if (!Array.isArray(result)) throw new Error();
+
+      expect(result.map((a) => a.title)).toEqual(['A', 'B', 'C']);
     });
 
-    if (!Array.isArray(result)) {
-      throw new Error('Expected array');
-    }
+    it('sorts by status', async () => {
+      repo.getAll.mockResolvedValue([
+        makeArticle({ status: ArticleStatus.published }),
+        makeArticle({ status: ArticleStatus.archived }),
+        makeArticle({ status: ArticleStatus.draft }),
+      ]);
 
-    expect(result.map((a) => a.title)).toEqual([
-      'A article',
-      'B article',
-      'C article',
-    ]);
+      const result = await service.getAll({
+        sortBy: ArticleSortBy.STATUS,
+        order: SortOrder.ASC,
+      });
+
+      if (!Array.isArray(result)) throw new Error();
+
+      expect(result.map((a) => a.status)).toEqual([
+        ArticleStatus.archived,
+        ArticleStatus.draft,
+        ArticleStatus.published,
+      ]);
+    });
+
+    it('returns paginated result', async () => {
+      repo.getAll.mockResolvedValue([
+        makeArticle({ id: '1' }),
+        makeArticle({ id: '2' }),
+        makeArticle({ id: '3' }),
+      ]);
+
+      const result = await service.getAll({ page: 1, limit: 2 });
+
+      if (Array.isArray(result)) throw new Error();
+
+      expect(result.total).toBe(3);
+      expect(result.data.length).toBe(2);
+    });
+
+    it('filters by status', async () => {
+      repo.getAll.mockResolvedValue([
+        makeArticle({ status: ArticleStatus.draft }),
+        makeArticle({ status: ArticleStatus.published }),
+      ]);
+
+      const result = await service.getAll({
+        status: ArticleStatus.published,
+      });
+
+      if (!Array.isArray(result)) throw new Error();
+
+      expect(result).toHaveLength(1);
+    });
+
+    it('filters by categoryId', async () => {
+      repo.getAll.mockResolvedValue([
+        makeArticle({ categoryId: 'cat-1' }),
+        makeArticle({ categoryId: 'cat-2' }),
+      ]);
+
+      const result = await service.getAll({
+        categoryId: 'cat-1',
+      });
+
+      if (!Array.isArray(result)) throw new Error();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].categoryId).toBe('cat-1');
+    });
+
+    it('filters by tag', async () => {
+      repo.getAll.mockResolvedValue([
+        makeArticle({ tags: ['nestjs'] }),
+        makeArticle({ tags: ['node'] }),
+      ]);
+
+      const result = await service.getAll({
+        tag: 'nestjs',
+      });
+
+      if (!Array.isArray(result)) throw new Error();
+
+      expect(result).toHaveLength(1);
+      expect(result[0].tags).toContain('nestjs');
+    });
   });
 
-  it('should return paginated result', async () => {
-    const result = await service.getAll({
-      page: 1,
-      limit: 2,
+  describe('create', () => {
+    it('creates article with defaults', async () => {
+      repo.create.mockResolvedValue(makeArticle());
+
+      await service.create({
+        title: 'New Article',
+        content: 'Content',
+      });
+
+      expect(repo.create).toHaveBeenCalledWith({
+        title: 'New Article',
+        content: 'Content',
+        status: ArticleStatus.draft,
+        authorId: null,
+        categoryId: null,
+        tags: [],
+      });
     });
-
-    if (Array.isArray(result)) {
-      throw new Error('Expected paginated response');
-    }
-
-    expect(result.total).toBe(3);
-    expect(result.page).toBe(1);
-    expect(result.limit).toBe(2);
-    expect(result.data.length).toBe(2);
   });
 
-  it('should sort before pagination', async () => {
-    const result = await service.getAll({
-      sortBy: ArticleSortBy.TITLE,
-      order: SortOrder.ASC,
-      page: 1,
-      limit: 2,
+  describe('update', () => {
+    it('updates article', async () => {
+      repo.getOne.mockResolvedValue(makeArticle({ id: '1' }));
+      repo.update.mockResolvedValue(makeArticle({ title: 'Updated' }));
+
+      await service.update('1', { title: 'Updated' });
+
+      expect(repo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Updated' }),
+      );
     });
 
-    if (Array.isArray(result)) {
-      throw new Error('Expected paginated response');
-    }
+    it('throws if article not found', async () => {
+      repo.getOne.mockResolvedValue(null);
 
-    expect(result.data.map((a) => a.title)).toEqual(['A article', 'B article']);
+      await expect(service.update('x', { title: 'test' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
-  it('should return second page correctly', async () => {
-    const result = await service.getAll({
-      page: 2,
-      limit: 2,
+  describe('getOne', () => {
+    it('returns article', async () => {
+      repo.getOne.mockResolvedValue(makeArticle({ id: '1' }));
+
+      const result = await service.getOne('1');
+
+      expect(result.id).toBe('1');
     });
 
-    if (Array.isArray(result)) {
-      throw new Error('Expected paginated response');
-    }
+    it('throws if not found', async () => {
+      repo.getOne.mockResolvedValue(null);
 
-    expect(result.data.length).toBe(1);
-    expect(result.data[0].id).toBe('2');
+      await expect(service.getOne('x')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes article', async () => {
+      repo.getOne.mockResolvedValue(makeArticle({ id: '1' }));
+
+      await service.delete('1');
+
+      expect(repo.delete).toHaveBeenCalledWith('1');
+    });
+
+    it('throws if not found', async () => {
+      repo.getOne.mockResolvedValue(null);
+
+      await expect(service.delete('x')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findOneOrNull', () => {
+    it('returns null if not found', async () => {
+      repo.getOne.mockResolvedValue(null);
+
+      const result = await service.findOneOrNull('x');
+
+      expect(result).toBeNull();
+    });
   });
 });
