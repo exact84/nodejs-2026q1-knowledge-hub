@@ -29,9 +29,7 @@ export class CommentsController {
   }
 
   @Get(':id')
-  async getOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
-  ): Promise<Comment> {
+  async getOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<Comment> {
     return this.commentsService.getOne(id);
   }
 

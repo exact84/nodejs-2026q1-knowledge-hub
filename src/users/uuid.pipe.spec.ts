@@ -43,9 +43,9 @@ describe('ParseUUIDPipe', () => {
   });
 
   it('throws on non-uuid string', async () => {
-    await expect(
-      pipe.transform('not-a-uuid', metadata),
-    ).rejects.toThrow(BadRequestException);
+    await expect(pipe.transform('not-a-uuid', metadata)).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('throws on empty string', async () => {

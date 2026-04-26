@@ -108,7 +108,9 @@ export class AppLogger implements LoggerService {
   }
 
   private shouldLog(level: LogLevel): boolean {
-    return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[this.configuredLevel];
+    return (
+      LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[this.configuredLevel]
+    );
   }
 
   private formatStructured(payload: LogPayload): string {
@@ -124,7 +126,8 @@ export class AppLogger implements LoggerService {
 
   private formatHumanReadable(payload: LogPayload): string {
     const context = payload.context ? `[${payload.context}]` : '';
-    const base = `${payload.timestamp} ${payload.level.toUpperCase()} ${context} ${payload.message}`.trim();
+    const base =
+      `${payload.timestamp} ${payload.level.toUpperCase()} ${context} ${payload.message}`.trim();
 
     if (payload.details === undefined && payload.trace === undefined) {
       return base;

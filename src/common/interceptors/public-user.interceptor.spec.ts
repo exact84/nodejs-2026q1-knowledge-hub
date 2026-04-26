@@ -1,6 +1,4 @@
-import {
-  CallHandler,
-} from '@nestjs/common';
+import { CallHandler } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import { of, firstValueFrom } from 'rxjs';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
@@ -22,7 +20,9 @@ describe('PublicUserInterceptor', () => {
         }),
     };
 
-    const result = await firstValueFrom(interceptor.intercept(context, handler));
+    const result = await firstValueFrom(
+      interceptor.intercept(context, handler),
+    );
 
     expect(result).toEqual({
       id: '1',
@@ -49,7 +49,9 @@ describe('PublicUserInterceptor', () => {
         }),
     };
 
-    const result = await firstValueFrom(interceptor.intercept(context, handler));
+    const result = await firstValueFrom(
+      interceptor.intercept(context, handler),
+    );
 
     expect(result).toEqual({
       total: 1,

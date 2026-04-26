@@ -31,7 +31,9 @@ export class ArticlesService {
     let articles = await this.articlesRepository.getAll();
 
     if (queryDto.status) {
-      articles = articles.filter((article) => article.status === queryDto.status);
+      articles = articles.filter(
+        (article) => article.status === queryDto.status,
+      );
     }
 
     if (queryDto.categoryId) {

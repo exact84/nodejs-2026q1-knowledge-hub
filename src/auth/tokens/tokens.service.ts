@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 

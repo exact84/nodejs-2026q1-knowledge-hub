@@ -11,9 +11,7 @@ import { CategorySortBy } from './enums/category-sort-by.enum';
 
 @Injectable()
 export class CategoriesService {
-  constructor(
-    private readonly categoriesRepository: CategoriesRepository,
-  ) {}
+  constructor(private readonly categoriesRepository: CategoriesRepository) {}
 
   async create(dto: CreateCategoryDto): Promise<Category> {
     return this.categoriesRepository.create({

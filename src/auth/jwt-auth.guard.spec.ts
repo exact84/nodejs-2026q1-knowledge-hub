@@ -58,16 +58,18 @@ describe('JwtAuthGuard', () => {
   it('throws when authorization header is missing', async () => {
     reflectorMock.getAllAndOverride.mockReturnValue(false);
 
-    await expect(guard.canActivate(createContext({ headers: {} }))).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      guard.canActivate(createContext({ headers: {} })),
+    ).rejects.toThrow(UnauthorizedException);
   });
 
   it('throws when authorization scheme is invalid', async () => {
     reflectorMock.getAllAndOverride.mockReturnValue(false);
 
     await expect(
-      guard.canActivate(createContext({ headers: { authorization: 'Basic token' } })),
+      guard.canActivate(
+        createContext({ headers: { authorization: 'Basic token' } }),
+      ),
     ).rejects.toThrow('Authorization header must use Bearer scheme');
   });
 
@@ -75,7 +77,9 @@ describe('JwtAuthGuard', () => {
     reflectorMock.getAllAndOverride.mockReturnValue(false);
 
     await expect(
-      guard.canActivate(createContext({ headers: { authorization: 'Bearer' } })),
+      guard.canActivate(
+        createContext({ headers: { authorization: 'Bearer' } }),
+      ),
     ).rejects.toThrow('Authorization header must use Bearer scheme');
   });
 
@@ -95,7 +99,9 @@ describe('JwtAuthGuard', () => {
     const result = await guard.canActivate(createContext(request));
 
     expect(result).toBe(true);
-    expect(tokensServiceMock.verifyAccessToken).toHaveBeenCalledWith('valid-token');
+    expect(tokensServiceMock.verifyAccessToken).toHaveBeenCalledWith(
+      'valid-token',
+    );
     expect(request.user).toEqual(payload);
   });
 });

@@ -69,10 +69,7 @@ describe('HttpExceptionFilter', () => {
   it('returns string[] message from HttpException response object', () => {
     const response = new TestResponse();
     const host = createHost('/user', response);
-    const exception = new HttpException(
-      { message: ['field is invalid'] },
-      400,
-    );
+    const exception = new HttpException({ message: ['field is invalid'] }, 400);
 
     filter.catch(exception, host);
 

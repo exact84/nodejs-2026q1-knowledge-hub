@@ -57,7 +57,9 @@ export class RbacGuard implements CanActivate {
     }
 
     if (user.role === UserRole.viewer) {
-      throw new ForbiddenException('You are not allowed to perform this action');
+      throw new ForbiddenException(
+        'You are not allowed to perform this action',
+      );
     }
 
     if (user.role === UserRole.editor) {

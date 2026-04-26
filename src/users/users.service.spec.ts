@@ -42,22 +42,22 @@ describe('UsersService', () => {
     repository = {
       create: vi.fn(),
       getAll: vi.fn().mockResolvedValue([
-      createUser({
-        id: '1',
-        login: 'charlie',
-        password: 'secret-1',
-        createdAt: 300,
-        updatedAt: 300,
-        role: UserRole.editor,
-      }),
-      createUser({
-        id: '2',
-        login: 'alice',
-        password: 'secret-2',
-        createdAt: 100,
-        updatedAt: 200,
-        role: UserRole.viewer,
-      }),
+        createUser({
+          id: '1',
+          login: 'charlie',
+          password: 'secret-1',
+          createdAt: 300,
+          updatedAt: 300,
+          role: UserRole.editor,
+        }),
+        createUser({
+          id: '2',
+          login: 'alice',
+          password: 'secret-2',
+          createdAt: 100,
+          updatedAt: 200,
+          role: UserRole.viewer,
+        }),
       ]),
       getOne: vi.fn(),
       update: vi.fn(),
