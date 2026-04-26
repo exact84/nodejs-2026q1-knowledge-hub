@@ -1,6 +1,7 @@
 import { Injectable, LoggerService } from '@nestjs/common';
 import { LOG_LEVELS, LogLevel } from './log-level.type';
 import { sanitizeLogData } from './sanitize-log-data.util';
+import { writeToFile } from './file-rotator.util';
 
 type LogPayload = {
   level: LogLevel;
@@ -82,6 +83,9 @@ export class AppLogger implements LoggerService {
     context?: string,
     details?: unknown,
   ): void {
+    if (process.env.NODE_ENV === 'test') {
+      return;
+    }
     if (!this.shouldLog(level)) {
       return;
     }
@@ -101,10 +105,11 @@ export class AppLogger implements LoggerService {
 
     if (level === 'error' || level === 'warn') {
       process.stderr.write(`${formatted}\n`);
-      return;
+    } else {
+      process.stdout.write(`${formatted}\n`);
     }
 
-    process.stdout.write(`${formatted}\n`);
+    writeToFile(formatted);
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -114,11 +119,16 @@ export class AppLogger implements LoggerService {
   }
 
   private formatStructured(payload: LogPayload): string {
+    const details = payload.details as Record<string, unknown> | undefined;
+
     return JSON.stringify({
       timestamp: payload.timestamp,
       level: payload.level,
       context: payload.context,
       message: payload.message,
+      method: details?.method,
+      path: details?.path,
+      statusCode: details?.statusCode,
       details: payload.details,
       trace: payload.trace,
     });

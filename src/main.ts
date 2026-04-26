@@ -7,6 +7,7 @@ import { PublicUserInterceptor } from './common/interceptors/public-user.interce
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppLogger } from './logger/logger.service';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
+import { flushWriteQueue } from './logger/file-rotator.util';
 
 async function bootstrap(): Promise<void> {
   const PORT = process.env.PORT || 4000;
@@ -35,7 +36,42 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('doc', app, document);
 
-  await app.listen(PORT);
+  const server = await app.listen(PORT);
+
+  const gracefulShutdown = async (signal: string) => {
+    const logger = app.get(AppLogger);
+
+    logger.log(`Received ${signal}. Starting graceful shutdown...`);
+
+    const timeout = setTimeout(() => {
+      logger.error('Shutdown timeout exceeded. Forcing exit.');
+      process.exit(1);
+    }, 5000);
+
+    timeout.unref();
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err?: Error) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+
+      await flushWriteQueue();
+
+      clearTimeout(timeout);
+
+      logger.log('Log queue flushed. Shutdown complete.');
+      process.exit(0);
+    } catch (err) {
+      logger.error('Graceful shutdown failed');
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 bootstrap();

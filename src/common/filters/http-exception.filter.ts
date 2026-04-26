@@ -34,11 +34,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
     };
 
-    this.logger.error(
-      `Unhandled exception during request processing: ${request.method} ${request.originalUrl || request.url}`,
-      exception instanceof Error ? exception.stack : undefined,
-      HttpExceptionFilter.name,
-    );
+    const baseMessage = `HTTP ${status} for ${request.method} ${request.originalUrl || request.url}`;
+
+    if (status >= 500) {
+      this.logger.error(
+        baseMessage,
+        exception instanceof Error ? exception.stack : undefined,
+        HttpExceptionFilter.name,
+      );
+    } else {
+      this.logger.warn(baseMessage, HttpExceptionFilter.name);
+    }
 
     response.status(status).json(body);
   }
