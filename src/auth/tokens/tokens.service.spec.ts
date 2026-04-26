@@ -1,6 +1,7 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
+import { TokenExpiredError } from 'jsonwebtoken';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TokensService } from './tokens.service';
 
@@ -80,6 +81,16 @@ describe('TokensService', () => {
     vi.mocked(jwtService.verifyAsync).mockRejectedValue(new Error('bad token'));
 
     await expect(service.verifyAccessToken('broken')).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('maps expired access token verification failures to unauthorized', async () => {
+    vi.mocked(jwtService.verifyAsync).mockRejectedValue(
+      new TokenExpiredError('jwt expired', new Date()),
+    );
+
+    await expect(service.verifyAccessToken('expired-token')).rejects.toThrow(
       UnauthorizedException,
     );
   });
