@@ -6,7 +6,11 @@ import {
 import { describe, expect, it } from 'vitest';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { HttpExceptionFilter } from './http-exception.filter';
-import { AppLogger } from 'src/logger/logger.service';
+import { AppLogger } from '../../logger/logger.service';
+import { ValidationError } from '../errors/validation.error';
+import { UnauthorizedError } from '../errors/unauthorized.error';
+import { ForbiddenError } from '../errors/forbidden.error';
+import { NotFoundError } from '../errors/not-found.error';
 
 type ErrorBody = {
   statusCode: number;
@@ -36,20 +40,7 @@ function createHost(requestUrl: string, response: TestResponse): ArgumentsHost {
 }
 
 describe('HttpExceptionFilter', () => {
-  const loggerStub = {
-    log: () => undefined,
-    error: () => undefined,
-    warn: () => undefined,
-    debug: () => undefined,
-    verbose: () => undefined,
-    logWithDetails: () => undefined,
-
-    configuredLevel: 'log',
-    write: () => undefined,
-    shouldLog: () => true,
-    formatStructured: () => '',
-    formatHumanReadable: () => '',
-  } as unknown as AppLogger;
+  const loggerStub = new AppLogger();
   const filter = new HttpExceptionFilter(loggerStub);
 
   it('returns expected shape for HttpException', () => {
@@ -115,5 +106,57 @@ describe('HttpExceptionFilter', () => {
     expect(response.body).not.toBeNull();
     expect(response.body?.message).toBe('Plain error');
     expect(response.body?.error).toBe('Conflict');
+  });
+
+  it('returns 400 for ValidationError', () => {
+    const response = new TestResponse();
+    const host = createHost('/user', response);
+
+    filter.catch(new ValidationError('Invalid payload'), host);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).not.toBeNull();
+    expect(response.body?.statusCode).toBe(400);
+    expect(response.body?.error).toBe('Bad Request');
+    expect(response.body?.message).toBe('Invalid payload');
+  });
+
+  it('returns 401 for UnauthorizedError', () => {
+    const response = new TestResponse();
+    const host = createHost('/auth/login', response);
+
+    filter.catch(new UnauthorizedError('Missing token'), host);
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).not.toBeNull();
+    expect(response.body?.statusCode).toBe(401);
+    expect(response.body?.error).toBe('Unauthorized');
+    expect(response.body?.message).toBe('Missing token');
+  });
+
+  it('returns 403 for ForbiddenError', () => {
+    const response = new TestResponse();
+    const host = createHost('/admin', response);
+
+    filter.catch(new ForbiddenError('Access denied'), host);
+
+    expect(response.statusCode).toBe(403);
+    expect(response.body).not.toBeNull();
+    expect(response.body?.statusCode).toBe(403);
+    expect(response.body?.error).toBe('Forbidden');
+    expect(response.body?.message).toBe('Access denied');
+  });
+
+  it('returns 404 for NotFoundError', () => {
+    const response = new TestResponse();
+    const host = createHost('/articles/unknown', response);
+
+    filter.catch(new NotFoundError('Article not found'), host);
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body).not.toBeNull();
+    expect(response.body?.statusCode).toBe(404);
+    expect(response.body?.error).toBe('Not Found');
+    expect(response.body?.message).toBe('Article not found');
   });
 });

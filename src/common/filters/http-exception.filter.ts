@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AppLogger } from '../../logger/logger.service';
+import { AppError } from '../errors/app.error';
 
 type ErrorResponseBody = {
   statusCode: number;
@@ -43,6 +44,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 
   private getStatus(exception: unknown): number {
+    if (exception instanceof AppError) {
+      return exception.statusCode;
+    }
+
     if (exception instanceof HttpException) {
       return exception.getStatus();
     }
@@ -51,6 +56,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 
   private getMessage(exception: unknown): string | string[] {
+    if (exception instanceof AppError) {
+      return exception.message;
+    }
+
     if (!(exception instanceof HttpException)) {
       return 'An unexpected error occurred';
     }
@@ -74,6 +83,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
   }
 
   private getErrorName(exception: unknown, status: number): string {
+    if (exception instanceof AppError) {
+      return this.getHttpErrorTitle(exception.statusCode);
+    }
+
     if (exception instanceof HttpException) {
       const errorResponse = exception.getResponse();
 
