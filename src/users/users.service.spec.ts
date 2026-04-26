@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
-import { User, PublicUser } from './entities/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
+import { User } from './entities/user.entity';
 import { UserSortBy } from './enums/user-sorting.enum';
 import { SortOrder } from '../common/pagination/sort-order.enum';
 
@@ -30,47 +31,44 @@ function createUser(
 
 describe('UsersService', () => {
   let service: UsersService;
-  let repository: Pick<
-    UsersRepository,
-    'create' | 'getAll' | 'getOne' | 'update' | 'delete' | 'getByLogin'
-  >;
+  let repository: UsersRepository;
 
   beforeEach(() => {
     process.env.CRYPT_SALT = '10';
 
-    repository = {
-      create: vi.fn(),
-      getAll: vi.fn().mockResolvedValue([
-        createUser({
-          id: '1',
-          login: 'charlie',
-          password: 'secret-1',
-          createdAt: 300,
-          updatedAt: 300,
-          role: UserRole.editor,
-        }),
-        createUser({
-          id: '2',
-          login: 'alice',
-          password: 'secret-2',
-          createdAt: 100,
-          updatedAt: 200,
-          role: UserRole.viewer,
-        }),
-      ]),
-      getOne: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-      getByLogin: vi.fn(),
-    };
+    repository = new UsersRepository(new PrismaService());
+
+    vi.spyOn(repository, 'create').mockImplementation(vi.fn());
+    vi.spyOn(repository, 'getAll').mockResolvedValue([
+      createUser({
+        id: '1',
+        login: 'charlie',
+        password: 'secret-1',
+        createdAt: 300,
+        updatedAt: 300,
+        role: UserRole.editor,
+      }),
+      createUser({
+        id: '2',
+        login: 'alice',
+        password: 'secret-2',
+        createdAt: 100,
+        updatedAt: 200,
+        role: UserRole.viewer,
+      }),
+    ]);
+    vi.spyOn(repository, 'getOne').mockImplementation(vi.fn());
+    vi.spyOn(repository, 'update').mockImplementation(vi.fn());
+    vi.spyOn(repository, 'delete').mockImplementation(vi.fn());
+    vi.spyOn(repository, 'getByLogin').mockImplementation(vi.fn());
 
     vi.mocked(bcrypt.hash).mockReset();
     vi.mocked(bcrypt.compare).mockReset();
 
-    service = new UsersService(repository as UsersRepository);
+    service = new UsersService(repository);
   });
 
-  it('hashes password and returns a public user on create', async () => {
+  it('hashes password and returns created user on create', async () => {
     vi.mocked(bcrypt.hash).mockResolvedValue('hashed-password' as never);
     vi.mocked(repository.create).mockImplementation(async (user) =>
       createUser({
@@ -92,16 +90,17 @@ describe('UsersService', () => {
       password: 'hashed-password',
       role: UserRole.viewer,
     });
-    expect(result).toEqual<PublicUser>({
+    expect(result).toEqual({
       id: 'created',
       login: 'new-user',
+      password: 'hashed-password',
       role: UserRole.viewer,
       createdAt: 0,
       updatedAt: 0,
     });
   });
 
-  it('returns paginated public users sorted by login', async () => {
+  it('returns paginated users sorted by login', async () => {
     const result = await service.getAll({
       sortBy: UserSortBy.LOGIN,
       order: SortOrder.ASC,
@@ -112,7 +111,7 @@ describe('UsersService', () => {
     expect(Array.isArray(result)).toBe(false);
     if (!Array.isArray(result)) {
       expect(result.data.map((user) => user.login)).toEqual(['alice']);
-      expect(result.data[0]).not.toHaveProperty('password');
+      expect(result.data[0]).toHaveProperty('password');
     }
   });
 
@@ -184,7 +183,7 @@ describe('UsersService', () => {
     const result = await service.getOne('1');
 
     expect(result.login).toBe('alice');
-    expect(result).not.toHaveProperty('password');
+    expect(result).toHaveProperty('password');
   });
 
   it('throws when user is missing on getOne', async () => {
@@ -213,7 +212,6 @@ describe('UsersService', () => {
     });
 
     expect(result.login).toBe('alice');
-    expect(result).not.toHaveProperty('password');
   });
 
   it('throws NotFoundException when user is missing on updatePassword', async () => {
@@ -291,7 +289,7 @@ describe('UsersService', () => {
     await service.create({
       login: 'user',
       password: 'pass',
-    } as any);
+    });
 
     expect(repository.create).toHaveBeenCalledWith(
       expect.objectContaining({

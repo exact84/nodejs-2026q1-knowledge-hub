@@ -17,7 +17,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['src/**/*.service.ts'],
+      include: [
+        'src/auth/**/*.service.ts',
+        'src/users/*.service.ts',
+        'src/articles/*.service.ts',
+        'src/**/*.guard.ts',
+        'src/**/*.interceptor.ts',
+        'src/**/*.filter.ts',
+      ],
       exclude: ['src/**/*.spec.ts', 'src/prisma/**'],
     },
   },

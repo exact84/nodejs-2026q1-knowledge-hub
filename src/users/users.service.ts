@@ -6,7 +6,6 @@ import {
 import { CreateUserDto } from './dto/create-user.dto';
 import { PublicUser, User } from './entities/user.entity';
 import { UserRole } from '@prisma/client';
-import { toPublicUser } from '../helpers/toPublicUser';
 import { UsersRepository } from './users.repository';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
@@ -34,7 +33,7 @@ export class UsersService {
       role: createUserDto.role ?? UserRole.viewer,
     });
 
-    return toPublicUser(savedUser);
+    return savedUser;
   }
 
   async getAll(
@@ -71,9 +70,7 @@ export class UsersService {
       return order === SortOrder.ASC ? compareResult : -compareResult;
     });
 
-    const publicUsers = users.map(toPublicUser);
-
-    return hasPagination ? paginate(publicUsers, page, limit) : publicUsers;
+    return hasPagination ? paginate(users, page, limit) : users;
   }
 
   async getOne(id: string): Promise<PublicUser> {
@@ -83,7 +80,7 @@ export class UsersService {
       throw new NotFoundException(`User with id ${id} not found`);
     }
 
-    return toPublicUser(user);
+    return user;
   }
 
   async getByLogin(login: string): Promise<User | null> {
@@ -123,7 +120,7 @@ export class UsersService {
 
     const savedUser = await this.usersRepository.update(updatedUser);
 
-    return toPublicUser(savedUser);
+    return savedUser;
   }
 
   async delete(id: string): Promise<void> {
