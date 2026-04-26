@@ -19,6 +19,7 @@ import {
 } from './auth/auth.constants';
 import { LoggerModule } from './logger/logger.module';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { HttpLoggingInterceptor } from './common/interceptors/http-logging.inter
       useClass: RbacGuard,
     },
     HttpLoggingInterceptor,
+    HttpExceptionFilter,
   ],
 })
 export class AppModule {}

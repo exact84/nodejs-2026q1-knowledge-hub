@@ -6,12 +6,12 @@ import {
 import { describe, expect, it } from 'vitest';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { HttpExceptionFilter } from './http-exception.filter';
+import { AppLogger } from 'src/logger/logger.service';
 
 type ErrorBody = {
   statusCode: number;
+  error: string;
   message: string | string[];
-  timestamp: string;
-  path: string;
 };
 
 class TestResponse {
@@ -36,7 +36,21 @@ function createHost(requestUrl: string, response: TestResponse): ArgumentsHost {
 }
 
 describe('HttpExceptionFilter', () => {
-  const filter = new HttpExceptionFilter();
+  const loggerStub = {
+    log: () => undefined,
+    error: () => undefined,
+    warn: () => undefined,
+    debug: () => undefined,
+    verbose: () => undefined,
+    logWithDetails: () => undefined,
+
+    configuredLevel: 'log',
+    write: () => undefined,
+    shouldLog: () => true,
+    formatStructured: () => '',
+    formatHumanReadable: () => '',
+  } as unknown as AppLogger;
+  const filter = new HttpExceptionFilter(loggerStub);
 
   it('returns expected shape for HttpException', () => {
     const response = new TestResponse();
@@ -47,9 +61,8 @@ describe('HttpExceptionFilter', () => {
     expect(response.statusCode).toBe(400);
     expect(response.body).not.toBeNull();
     expect(response.body?.statusCode).toBe(400);
+    expect(response.body?.error).toBe('Bad Request');
     expect(response.body?.message).toBe('Validation failed');
-    expect(response.body?.path).toBe('/user');
-    expect(response.body?.timestamp).toEqual(expect.any(String));
   });
 
   it('returns 500 shape for unknown error', () => {
@@ -61,9 +74,8 @@ describe('HttpExceptionFilter', () => {
     expect(response.statusCode).toBe(500);
     expect(response.body).not.toBeNull();
     expect(response.body?.statusCode).toBe(500);
-    expect(response.body?.message).toBe('Internal server error');
-    expect(response.body?.path).toBe('/auth/login');
-    expect(response.body?.timestamp).toEqual(expect.any(String));
+    expect(response.body?.error).toBe('Internal Server Error');
+    expect(response.body?.message).toBe('An unexpected error occurred');
   });
 
   it('returns string[] message from HttpException response object', () => {
@@ -76,6 +88,7 @@ describe('HttpExceptionFilter', () => {
     expect(response.statusCode).toBe(400);
     expect(response.body).not.toBeNull();
     expect(response.body?.message).toEqual(['field is invalid']);
+    expect(response.body?.error).toBe('Bad Request');
   });
 
   it('falls back to exception.message when response object has no message', () => {
@@ -88,6 +101,7 @@ describe('HttpExceptionFilter', () => {
     expect(response.statusCode).toBe(422);
     expect(response.body).not.toBeNull();
     expect(response.body?.message).toBe('Http Exception');
+    expect(response.body?.error).toBe('payload');
   });
 
   it('returns string message when HttpException response is string', () => {
@@ -100,5 +114,6 @@ describe('HttpExceptionFilter', () => {
     expect(response.statusCode).toBe(409);
     expect(response.body).not.toBeNull();
     expect(response.body?.message).toBe('Plain error');
+    expect(response.body?.error).toBe('Conflict');
   });
 });

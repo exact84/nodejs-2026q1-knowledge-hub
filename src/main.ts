@@ -24,7 +24,7 @@ async function bootstrap(): Promise<void> {
     app.get(HttpLoggingInterceptor),
     new PublicUserInterceptor(),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(app.get(HttpExceptionFilter));
 
   const config = new DocumentBuilder()
     .setTitle('Knowledge Hub API')
