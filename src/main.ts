@@ -6,6 +6,7 @@ import 'dotenv/config';
 import { PublicUserInterceptor } from './common/interceptors/public-user.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppLogger } from './logger/logger.service';
+import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 
 async function bootstrap(): Promise<void> {
   const PORT = process.env.PORT || 4000;
@@ -19,7 +20,10 @@ async function bootstrap(): Promise<void> {
       transform: true,
     }),
   );
-  app.useGlobalInterceptors(new PublicUserInterceptor());
+  app.useGlobalInterceptors(
+    app.get(HttpLoggingInterceptor),
+    new PublicUserInterceptor(),
+  );
   app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()

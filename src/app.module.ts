@@ -13,8 +13,12 @@ import { LogoutModule } from './auth/logout/logout.module';
 import { TokensModule } from './auth/tokens/tokens.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RbacGuard } from './auth/rbac.guard';
-import { AUTH_THROTTLE_LIMIT, AUTH_THROTTLE_TTL_MS } from './auth/auth.constants';
+import {
+  AUTH_THROTTLE_LIMIT,
+  AUTH_THROTTLE_TTL_MS,
+} from './auth/auth.constants';
 import { LoggerModule } from './logger/logger.module';
+import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 
 @Module({
   imports: [
@@ -54,6 +58,7 @@ import { LoggerModule } from './logger/logger.module';
       provide: APP_GUARD,
       useClass: RbacGuard,
     },
+    HttpLoggingInterceptor,
   ],
 })
 export class AppModule {}
