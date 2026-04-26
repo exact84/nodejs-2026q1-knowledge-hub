@@ -1,10 +1,10 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from './users.service';
 import { UsersRepository } from './users.repository';
-import { PrismaService } from '../prisma/prisma.service';
 import { User } from './entities/user.entity';
 import { UserSortBy } from './enums/user-sorting.enum';
 import { SortOrder } from '../common/pagination/sort-order.enum';
@@ -31,15 +31,17 @@ function createUser(
 
 describe('UsersService', () => {
   let service: UsersService;
-  let repository: UsersRepository;
+  let repository: Pick<
+    UsersRepository,
+    'create' | 'getAll' | 'getOne' | 'update' | 'delete' | 'getByLogin'
+  >;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env.CRYPT_SALT = '10';
 
-    repository = new UsersRepository(new PrismaService());
-
-    vi.spyOn(repository, 'create').mockImplementation(vi.fn());
-    vi.spyOn(repository, 'getAll').mockResolvedValue([
+    repository = {
+      create: vi.fn(),
+      getAll: vi.fn().mockResolvedValue([
       createUser({
         id: '1',
         login: 'charlie',
@@ -56,16 +58,27 @@ describe('UsersService', () => {
         updatedAt: 200,
         role: UserRole.viewer,
       }),
-    ]);
-    vi.spyOn(repository, 'getOne').mockImplementation(vi.fn());
-    vi.spyOn(repository, 'update').mockImplementation(vi.fn());
-    vi.spyOn(repository, 'delete').mockImplementation(vi.fn());
-    vi.spyOn(repository, 'getByLogin').mockImplementation(vi.fn());
+      ]),
+      getOne: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      getByLogin: vi.fn(),
+    };
 
     vi.mocked(bcrypt.hash).mockReset();
     vi.mocked(bcrypt.compare).mockReset();
 
-    service = new UsersService(repository);
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: UsersRepository,
+          useValue: repository,
+        },
+      ],
+    }).compile();
+
+    service = module.get(UsersService);
   });
 
   it('hashes password and returns created user on create', async () => {
