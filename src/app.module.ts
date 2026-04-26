@@ -14,6 +14,7 @@ import { TokensModule } from './auth/tokens/tokens.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { RbacGuard } from './auth/rbac.guard';
 import { AUTH_THROTTLE_LIMIT, AUTH_THROTTLE_TTL_MS } from './auth/auth.constants';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AUTH_THROTTLE_LIMIT, AUTH_THROTTLE_TTL_MS } from './auth/auth.constants
     RefreshModule,
     LogoutModule,
     TokensModule,
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [
