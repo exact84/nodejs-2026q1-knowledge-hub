@@ -1,4 +1,3 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +7,8 @@ import { UsersRepository } from './users.repository';
 import { User } from './entities/user.entity';
 import { UserSortBy } from './enums/user-sorting.enum';
 import { SortOrder } from '../common/pagination/sort-order.enum';
+import { ForbiddenError } from '../common/errors/forbidden.error';
+import { NotFoundError } from '../common/errors/not-found.error';
 
 vi.mock('bcryptjs', () => ({
   default: {
@@ -181,7 +182,7 @@ describe('UsersService', () => {
         oldPassword: 'wrong-password',
         newPassword: 'next-password',
       }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('returns user when exists', async () => {
@@ -202,7 +203,7 @@ describe('UsersService', () => {
   it('throws when user is missing on getOne', async () => {
     vi.mocked(repository.getOne).mockResolvedValue(null);
 
-    await expect(service.getOne('missing')).rejects.toThrow(NotFoundException);
+    await expect(service.getOne('missing')).rejects.toThrow(NotFoundError);
   });
 
   it('updates password successfully', async () => {
@@ -227,7 +228,7 @@ describe('UsersService', () => {
     expect(result.login).toBe('alice');
   });
 
-  it('throws NotFoundException when user is missing on updatePassword', async () => {
+  it('throws NotFoundError when user is missing on updatePassword', async () => {
     vi.mocked(repository.getOne).mockResolvedValue(null);
 
     await expect(
@@ -235,7 +236,7 @@ describe('UsersService', () => {
         oldPassword: 'x',
         newPassword: 'y',
       }),
-    ).rejects.toThrow(NotFoundException);
+    ).rejects.toThrow(NotFoundError);
   });
 
   it('deletes user when exists', async () => {
@@ -252,10 +253,10 @@ describe('UsersService', () => {
     expect(repository.delete).toHaveBeenCalledWith('user-1');
   });
 
-  it('throws NotFoundException when deleting missing user', async () => {
+  it('throws NotFoundError when deleting missing user', async () => {
     vi.mocked(repository.getOne).mockResolvedValue(null);
 
-    await expect(service.delete('id')).rejects.toThrow(NotFoundException);
+    await expect(service.delete('id')).rejects.toThrow(NotFoundError);
   });
 
   it('returns user by login', async () => {

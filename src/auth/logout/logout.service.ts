@@ -1,12 +1,10 @@
-import {
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { LogoutDto } from './dto/logout.dto';
 import { Logout } from './entities/logout.entity';
 import { UsersService } from 'src/users/users.service';
 import { TokensService } from 'src/auth/tokens/tokens.service';
+import { ForbiddenError } from '../../common/errors/forbidden.error';
+import { UnauthorizedError } from '../../common/errors/unauthorized.error';
 
 @Injectable()
 export class LogoutService {
@@ -17,7 +15,7 @@ export class LogoutService {
 
   async logout(logoutDto: LogoutDto): Promise<Logout> {
     if (!logoutDto?.refreshToken) {
-      throw new UnauthorizedException('Refresh token is required');
+      throw new UnauthorizedError('Refresh token is required');
     }
 
     const payload = await this.tokensService.verifyRefreshToken(
@@ -26,7 +24,7 @@ export class LogoutService {
     const user = await this.usersService.getByLogin(payload.login);
 
     if (!user || user.id !== payload.userId) {
-      throw new ForbiddenException('Refresh token is invalid or expired');
+      throw new ForbiddenError('Refresh token is invalid or expired');
     }
 
     this.tokensService.revokeRefreshToken(logoutDto.refreshToken);

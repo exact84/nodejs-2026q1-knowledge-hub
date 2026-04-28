@@ -1,9 +1,9 @@
-import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LoginService } from './login.service';
 import { UsersService } from 'src/users/users.service';
 import { TokensService } from 'src/auth/tokens/tokens.service';
 import * as bcrypt from 'bcryptjs';
+import { ForbiddenError } from '../../common/errors/forbidden.error';
 
 describe('LoginService', () => {
   let service: LoginService;
@@ -53,7 +53,7 @@ describe('LoginService', () => {
 
     await expect(
       service.login({ login: 'alice', password: 'password' }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('throws an exception for invalid password', async () => {
@@ -68,6 +68,6 @@ describe('LoginService', () => {
 
     await expect(
       service.login({ login: 'alice', password: 'wrong-password' }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 });

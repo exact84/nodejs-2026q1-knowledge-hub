@@ -1,10 +1,10 @@
-import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
 import { describe, beforeEach, expect, it, vi } from 'vitest';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { TokensService } from './tokens/tokens.service';
+import { UnauthorizedError } from '../common/errors/unauthorized.error';
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
@@ -60,7 +60,7 @@ describe('JwtAuthGuard', () => {
 
     await expect(
       guard.canActivate(createContext({ headers: {} })),
-    ).rejects.toThrow(UnauthorizedException);
+    ).rejects.toThrow(UnauthorizedError);
   });
 
   it('throws when authorization scheme is invalid', async () => {

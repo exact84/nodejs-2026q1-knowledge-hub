@@ -1,13 +1,9 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { TokensService } from './tokens/tokens.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { UnauthorizedError } from '../common/errors/unauthorized.error';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -30,13 +26,13 @@ export class JwtAuthGuard implements CanActivate {
     const authorizationHeader = request.headers.authorization;
 
     if (!authorizationHeader) {
-      throw new UnauthorizedException('Authorization header is missing');
+      throw new UnauthorizedError('Authorization header is missing');
     }
 
     const [scheme, token] = authorizationHeader.split(' ');
 
     if (scheme !== 'Bearer' || !token) {
-      throw new UnauthorizedException(
+      throw new UnauthorizedError(
         'Authorization header must use Bearer scheme',
       );
     }

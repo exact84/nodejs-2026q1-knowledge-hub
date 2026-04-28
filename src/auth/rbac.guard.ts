@@ -1,15 +1,11 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { UserRole } from '@prisma/client';
 import { ArticlesService } from 'src/articles/articles.service';
 import { CommentsService } from 'src/comments/comments.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { ForbiddenError } from '../common/errors/forbidden.error';
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -57,16 +53,14 @@ export class RbacGuard implements CanActivate {
     }
 
     if (user.role === UserRole.viewer) {
-      throw new ForbiddenException(
-        'You are not allowed to perform this action',
-      );
+      throw new ForbiddenError('You are not allowed to perform this action');
     }
 
     if (user.role === UserRole.editor) {
       return this.handleEditorAccess(request, user.userId);
     }
 
-    throw new ForbiddenException('You are not allowed to perform this action');
+    throw new ForbiddenError('You are not allowed to perform this action');
   }
 
   private async handleEditorAccess(
@@ -81,7 +75,7 @@ export class RbacGuard implements CanActivate {
       return this.handleCommentAccess(request, userId);
     }
 
-    throw new ForbiddenException('You are not allowed to perform this action');
+    throw new ForbiddenError('You are not allowed to perform this action');
   }
 
   private async handleArticleAccess(
@@ -103,7 +97,7 @@ export class RbacGuard implements CanActivate {
       }
     }
 
-    throw new ForbiddenException('You are not allowed to perform this action');
+    throw new ForbiddenError('You are not allowed to perform this action');
   }
 
   private async handleCommentAccess(
@@ -125,7 +119,7 @@ export class RbacGuard implements CanActivate {
       }
     }
 
-    throw new ForbiddenException('You are not allowed to perform this action');
+    throw new ForbiddenError('You are not allowed to perform this action');
   }
 
   private isArticleRoute(path: string): boolean {

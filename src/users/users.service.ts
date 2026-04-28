@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PublicUser, User } from './entities/user.entity';
 import { UserRole } from '@prisma/client';
@@ -14,6 +10,8 @@ import { paginate } from '../common/pagination/paginate.util';
 import { SortOrder } from '../common/pagination/sort-order.enum';
 import { UserSortBy } from './enums/user-sorting.enum';
 import * as bcrypt from 'bcryptjs';
+import { NotFoundError } from '../common/errors/not-found.error';
+import { ForbiddenError } from '../common/errors/forbidden.error';
 
 @Injectable()
 export class UsersService {
@@ -77,7 +75,7 @@ export class UsersService {
     const user = await this.usersRepository.getOne(id);
 
     if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundError(`User with id ${id} not found`);
     }
 
     return user;
@@ -94,7 +92,7 @@ export class UsersService {
     const user = await this.usersRepository.getOne(id);
 
     if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundError(`User with id ${id} not found`);
     }
 
     const isMatch = await bcrypt.compare(
@@ -103,7 +101,7 @@ export class UsersService {
     );
 
     if (!isMatch) {
-      throw new ForbiddenException('Old password is wrong');
+      throw new ForbiddenError('Old password is wrong');
     }
 
     const passwordSaltRounds = Number(process.env.CRYPT_SALT);
@@ -127,7 +125,7 @@ export class UsersService {
     const user = await this.usersRepository.getOne(id);
 
     if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundError(`User with id ${id} not found`);
     }
 
     await this.usersRepository.delete(id);

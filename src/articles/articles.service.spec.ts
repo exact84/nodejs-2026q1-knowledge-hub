@@ -5,7 +5,7 @@ import { ArticleStatus } from '@prisma/client';
 import { ArticlesRepository } from './articles.repository';
 import { SortOrder } from '../common/pagination/sort-order.enum';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundError } from '../common/errors/not-found.error';
 
 const makeArticle = (overrides?: Partial<Article>): Article => ({
   id: '1',
@@ -175,7 +175,7 @@ describe('ArticlesService', () => {
       repo.getOne.mockResolvedValue(null);
 
       await expect(service.update('x', { title: 'test' })).rejects.toThrow(
-        NotFoundException,
+        NotFoundError,
       );
     });
   });
@@ -192,7 +192,7 @@ describe('ArticlesService', () => {
     it('throws if not found', async () => {
       repo.getOne.mockResolvedValue(null);
 
-      await expect(service.getOne('x')).rejects.toThrow(NotFoundException);
+      await expect(service.getOne('x')).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -208,7 +208,7 @@ describe('ArticlesService', () => {
     it('throws if not found', async () => {
       repo.getOne.mockResolvedValue(null);
 
-      await expect(service.delete('x')).rejects.toThrow(NotFoundException);
+      await expect(service.delete('x')).rejects.toThrow(NotFoundError);
     });
   });
 

@@ -13,6 +13,7 @@ async function bootstrap(): Promise<void> {
   const PORT = process.env.PORT || 4000;
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(AppLogger));
+  const logger = app.get(AppLogger);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -36,10 +37,23 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('doc', app, document);
 
-  const server = await app.listen(PORT);
+  await app.listen(PORT);
 
-  const gracefulShutdown = async (signal: string) => {
-    const logger = app.get(AppLogger);
+  let isShuttingDown = false;
+
+  const gracefulShutdown = async (
+    signal: string,
+    options?: {
+      level?: 'error' | 'warn' | 'log' | 'debug' | 'verbose';
+      error?: unknown;
+      exitCode?: number;
+    },
+  ) => {
+    if (isShuttingDown) {
+      return;
+    }
+
+    isShuttingDown = true;
 
     logger.log(`Received ${signal}. Starting graceful shutdown...`);
 
@@ -51,27 +65,64 @@ async function bootstrap(): Promise<void> {
     timeout.unref();
 
     try {
-      await new Promise<void>((resolve, reject) => {
-        server.close((err?: Error) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
+      const level = options?.level;
+      const originalError = options?.error;
+      const exitCode = options?.exitCode ?? 0;
+
+      if (originalError instanceof Error) {
+        const trace = originalError.stack;
+        if (level === 'error') {
+          logger.error(
+            `${signal}: ${originalError.message}`,
+            trace,
+            'Bootstrap',
+          );
+        }
+      } else if (originalError !== undefined) {
+        const normalized = String(originalError);
+        if (level === 'error') {
+          logger.error(`${signal}: ${normalized}`, undefined, 'Bootstrap');
+        }
+      }
+
+      await app.close();
 
       await flushWriteQueue();
 
       clearTimeout(timeout);
 
       logger.log('Log queue flushed. Shutdown complete.');
-      process.exit(0);
+      process.exit(exitCode);
     } catch (err) {
-      logger.error('Graceful shutdown failed');
+      logger.error(
+        'Graceful shutdown failed',
+        err instanceof Error ? err.stack : undefined,
+        'Bootstrap',
+      );
       process.exit(1);
     }
   };
 
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on(
+    'uncaughtException',
+    (error) =>
+      void gracefulShutdown('FATAL uncaughtException', {
+        level: 'error',
+        error,
+        exitCode: 1,
+      }),
+  );
+  process.on(
+    'unhandledRejection',
+    (reason) =>
+      void gracefulShutdown('unhandledRejection', {
+        level: 'error',
+        error: reason,
+        exitCode: 1,
+      }),
+  );
 }
 
 bootstrap();

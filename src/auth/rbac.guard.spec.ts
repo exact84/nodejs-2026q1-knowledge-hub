@@ -1,4 +1,3 @@
-import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
@@ -7,6 +6,7 @@ import { describe, beforeEach, expect, it, vi } from 'vitest';
 import { RbacGuard } from './rbac.guard';
 import { ArticlesService } from '../articles/articles.service';
 import { CommentsService } from '../comments/comments.service';
+import { ForbiddenError } from '../common/errors/forbidden.error';
 
 type AuthUser = {
   userId: string;
@@ -140,7 +140,7 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('allows editor to create article and injects authorId', async () => {
@@ -191,7 +191,7 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('denies editor for unsupported article method', async () => {
@@ -208,7 +208,7 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('allows editor to create comment and injects authorId', async () => {
@@ -259,7 +259,7 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('denies editor for unsupported comment method', async () => {
@@ -276,7 +276,7 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('throws for editor on unsupported route', async () => {
@@ -292,7 +292,7 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('throws for unsupported role', async () => {
@@ -307,6 +307,6 @@ describe('RbacGuard', () => {
           }),
         ),
       ),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 });

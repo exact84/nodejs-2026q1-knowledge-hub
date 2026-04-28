@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { Article } from './entities/article.entity';
 import { ArticleStatus } from '@prisma/client';
@@ -9,6 +9,7 @@ import { ArticleSortBy } from './enums/article-sorting.enum';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 import { paginate } from '../common/pagination/paginate.util';
 import { SortOrder } from '../common/pagination/sort-order.enum';
+import { NotFoundError } from '../common/errors/not-found.error';
 
 @Injectable()
 export class ArticlesService {
@@ -80,7 +81,7 @@ export class ArticlesService {
     const article = await this.articlesRepository.getOne(id);
 
     if (!article) {
-      throw new NotFoundException(`Article with id ${id} not found`);
+      throw new NotFoundError(`Article with id ${id} not found`);
     }
 
     const updatedArticle: Article = {
@@ -100,7 +101,7 @@ export class ArticlesService {
     const article = await this.articlesRepository.getOne(id);
 
     if (!article) {
-      throw new NotFoundException(`Article with id ${id} not found`);
+      throw new NotFoundError(`Article with id ${id} not found`);
     }
 
     return article;
@@ -110,7 +111,7 @@ export class ArticlesService {
     const article = await this.articlesRepository.getOne(id);
 
     if (!article) {
-      throw new NotFoundException(`Article with id ${id} not found`);
+      throw new NotFoundError(`Article with id ${id} not found`);
     }
 
     await this.articlesRepository.delete(id);

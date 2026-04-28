@@ -1,9 +1,10 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { TokenExpiredError } from 'jsonwebtoken';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TokensService } from './tokens.service';
+import { ForbiddenError } from '../../common/errors/forbidden.error';
+import { UnauthorizedError } from '../../common/errors/unauthorized.error';
 
 describe('TokensService', () => {
   let service: TokensService;
@@ -73,7 +74,7 @@ describe('TokensService', () => {
     service.revokeRefreshToken('refresh-token');
 
     await expect(service.verifyRefreshToken('refresh-token')).rejects.toThrow(
-      ForbiddenException,
+      ForbiddenError,
     );
   });
 
@@ -81,7 +82,7 @@ describe('TokensService', () => {
     vi.mocked(jwtService.verifyAsync).mockRejectedValue(new Error('bad token'));
 
     await expect(service.verifyAccessToken('broken')).rejects.toThrow(
-      UnauthorizedException,
+      UnauthorizedError,
     );
   });
 
@@ -91,7 +92,7 @@ describe('TokensService', () => {
     );
 
     await expect(service.verifyAccessToken('expired-token')).rejects.toThrow(
-      UnauthorizedException,
+      UnauthorizedError,
     );
   });
 
@@ -100,7 +101,7 @@ describe('TokensService', () => {
 
     await expect(
       service.verifyRefreshToken('broken-refresh-token'),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('adds a refresh token to revoked tokens with current timestamp', () => {

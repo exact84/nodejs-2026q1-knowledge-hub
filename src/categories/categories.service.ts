@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Category } from './entities/categories.entity';
 import { CategoriesRepository } from './categories.repository';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -8,6 +8,7 @@ import { paginate } from '../common/pagination/paginate.util';
 import { SortOrder } from '../common/pagination/sort-order.enum';
 import { GetCategoriesQueryDto } from './dto/get-categories-query.dto';
 import { CategorySortBy } from './enums/category-sort-by.enum';
+import { NotFoundError } from '../common/errors/not-found.error';
 
 @Injectable()
 export class CategoriesService {
@@ -57,7 +58,7 @@ export class CategoriesService {
     const category = await this.categoriesRepository.getOne(id);
 
     if (!category) {
-      throw new NotFoundException(`Category with id ${id} not found`);
+      throw new NotFoundError(`Category with id ${id} not found`);
     }
 
     return category;
@@ -67,7 +68,7 @@ export class CategoriesService {
     const category = await this.categoriesRepository.getOne(id);
 
     if (!category) {
-      throw new NotFoundException(`Category with id ${id} not found`);
+      throw new NotFoundError(`Category with id ${id} not found`);
     }
 
     const updated: Category = {
@@ -83,7 +84,7 @@ export class CategoriesService {
     const category = await this.categoriesRepository.getOne(id);
 
     if (!category) {
-      throw new NotFoundException(`Category with id ${id} not found`);
+      throw new NotFoundError(`Category with id ${id} not found`);
     }
 
     await this.categoriesRepository.delete(id);

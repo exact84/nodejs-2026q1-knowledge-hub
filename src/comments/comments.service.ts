@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ArticlesService } from '../articles/articles.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { GetCommentsQueryDto } from './dto/get-comments-query.dto';
@@ -13,6 +9,8 @@ import { SortOrder } from '../common/pagination/sort-order.enum';
 import { paginate } from '../common/pagination/paginate.util';
 import { CommentSortBy } from './enums/comments-sorting.enum';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { NotFoundError } from '../common/errors/not-found.error';
+import { ValidationError } from '../common/errors/validation.error';
 
 @Injectable()
 export class CommentsService {
@@ -25,7 +23,7 @@ export class CommentsService {
     const article = await this.articlesService.findOneOrNull(dto.articleId);
 
     if (!article) {
-      throw new UnprocessableEntityException(
+      throw new ValidationError(
         `Article with id ${dto.articleId} does not exist`,
       );
     }
@@ -80,7 +78,7 @@ export class CommentsService {
     const comment = await this.commentsRepository.getOne(id);
 
     if (!comment) {
-      throw new NotFoundException(`Comment with id ${id} not found`);
+      throw new NotFoundError(`Comment with id ${id} not found`);
     }
 
     return comment;
@@ -94,14 +92,14 @@ export class CommentsService {
     const comment = await this.commentsRepository.getOne(id);
 
     if (!comment) {
-      throw new NotFoundException(`Comment with id ${id} not found`);
+      throw new NotFoundError(`Comment with id ${id} not found`);
     }
 
     if (dto.articleId) {
       const article = await this.articlesService.findOneOrNull(dto.articleId);
 
       if (!article) {
-        throw new UnprocessableEntityException(
+        throw new ValidationError(
           `Article with id ${dto.articleId} does not exist`,
         );
       }
@@ -119,7 +117,7 @@ export class CommentsService {
     const comment = await this.commentsRepository.getOne(id);
 
     if (!comment) {
-      throw new NotFoundException(`Comment with id ${id} not found`);
+      throw new NotFoundError(`Comment with id ${id} not found`);
     }
 
     await this.commentsRepository.delete(id);

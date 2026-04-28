@@ -1,10 +1,8 @@
-import {
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
+import { ForbiddenError } from '../../common/errors/forbidden.error';
+import { UnauthorizedError } from '../../common/errors/unauthorized.error';
 
 export interface AuthTokenPayload {
   userId: string;
@@ -45,7 +43,7 @@ export class TokensService {
     this.cleanupRevokedRefreshTokens();
 
     if (this.revokedRefreshTokens.has(refreshToken)) {
-      throw new ForbiddenException('Refresh token is invalid or expired');
+      throw new ForbiddenError('Refresh token is invalid or expired');
     }
 
     try {
@@ -53,7 +51,7 @@ export class TokensService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
     } catch {
-      throw new ForbiddenException('Refresh token is invalid or expired');
+      throw new ForbiddenError('Refresh token is invalid or expired');
     }
   }
 
@@ -63,7 +61,7 @@ export class TokensService {
         secret: process.env.JWT_SECRET,
       });
     } catch {
-      throw new UnauthorizedException('Access token is invalid or expired');
+      throw new UnauthorizedError('Access token is invalid or expired');
     }
   }
 

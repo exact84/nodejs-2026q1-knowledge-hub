@@ -1,8 +1,8 @@
-import { BadRequestException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SignupService } from './signup.service';
 import { UsersService } from 'src/users/users.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
+import { ValidationError } from '../../common/errors/validation.error';
 
 describe('SignupService', () => {
   let service: SignupService;
@@ -48,7 +48,7 @@ describe('SignupService', () => {
 
     await expect(
       service.signup({ login: 'alice', password: 'password' }),
-    ).rejects.toThrow(BadRequestException);
+    ).rejects.toThrow(ValidationError);
   });
 
   it('rethrows unexpected errors', async () => {

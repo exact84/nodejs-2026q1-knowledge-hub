@@ -1,9 +1,10 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LogoutService } from './logout.service';
 import { UsersService } from 'src/users/users.service';
 import { TokensService } from 'src/auth/tokens/tokens.service';
 import { UserRole } from '@prisma/client';
+import { ForbiddenError } from '../../common/errors/forbidden.error';
+import { UnauthorizedError } from '../../common/errors/unauthorized.error';
 
 describe('LogoutService', () => {
   let service: LogoutService;
@@ -54,18 +55,18 @@ describe('LogoutService', () => {
 
   it('throws an exception if refresh token is missing', async () => {
     await expect(service.logout({ refreshToken: '' })).rejects.toThrow(
-      UnauthorizedException,
+      UnauthorizedError,
     );
   });
 
   it('throws an exception for invalid refresh token', async () => {
     vi.mocked(tokensService.verifyRefreshToken).mockRejectedValue(
-      new ForbiddenException('Invalid token'),
+      new ForbiddenError('Invalid token'),
     );
 
     await expect(
       service.logout({ refreshToken: 'invalid-refresh-token' }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it('throws an exception if user does not match payload', async () => {
@@ -85,6 +86,6 @@ describe('LogoutService', () => {
 
     await expect(
       service.logout({ refreshToken: 'valid-refresh-token' }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenError);
   });
 });
