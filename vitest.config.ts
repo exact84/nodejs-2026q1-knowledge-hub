@@ -15,12 +15,17 @@ export default defineConfig({
     exclude: ['test/**', 'dist/**', 'node_modules/**'],
     setupFiles: ['vitest.setup.ts'],
     coverage: {
+      thresholds: {
+        lines: 90,
+        branches: 85,
+      },
       provider: 'v8',
       reporter: ['text', 'html'],
       include: [
         'src/auth/**/*.service.ts',
         'src/users/*.service.ts',
         'src/articles/*.service.ts',
+        'src/**/*.dto.ts',
         'src/**/*.guard.ts',
         'src/**/*.interceptor.ts',
         'src/**/*.filter.ts',
