@@ -37,6 +37,8 @@ Required variables:
 - `POSTGRES_PORT`
 - `DATABASE_URL`
 - `DOCKER_DATABASE_URL`
+- `LOG_LEVEL`
+- `LOG_MAX_FILE_SIZE`
 
 ## Installing NPM modules
 
@@ -60,6 +62,21 @@ This will automatically:
 After starting the app on port `4000` by default, OpenAPI documentation will be available at:
 
 `http://localhost:4000/doc`
+
+You can start database container separately:
+
+```bash
+ docker compose up -d db
+
+ npx prisma migrate reset --force
+ npx prisma generate
+```
+
+After you finish working with the repository, don’t forget to stop the containers:
+
+```bash
+docker compose down -v
+```
 
 ## Check database in Adminer
 
