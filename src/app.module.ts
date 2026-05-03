@@ -20,6 +20,7 @@ import {
 import { LoggerModule } from './logger/logger.module';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     LogoutModule,
     TokensModule,
     LoggerModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [
