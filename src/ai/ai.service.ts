@@ -19,6 +19,7 @@ import {
 } from './dto/translate.dto';
 import { buildTranslatePrompt } from './prompts/translate.prompt';
 import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
+import { GenerateService } from './generate/generate.service';
 
 @Injectable()
 export class AiService {
@@ -27,6 +28,7 @@ export class AiService {
     private readonly gemini: GeminiService,
     private readonly usage: UsageService,
     private readonly cache: CacheService,
+    private readonly generateService: GenerateService,
   ) {}
 
   async summarize(
@@ -200,15 +202,26 @@ export class AiService {
   async generate(dto: GenerateRequest): Promise<GenerateResponse> {
     this.usage.trackRequest('generate');
 
-    const start = Date.now();
-    const result = await this.gemini.generate(dto.prompt);
-    this.usage.trackLatency(Date.now() - start);
+    const context = this.generateService.buildContext(dto.sessionId);
+
+    const prompt = context ? `${context}\nuser: ${dto.prompt}` : dto.prompt;
+
+    const result = await this.gemini.generate(prompt);
 
     const tokens = result.raw?.usageMetadata?.totalTokenCount;
     if (tokens) {
       this.usage.trackTokens(tokens);
     }
 
+    this.generateService.addMessage(dto.sessionId, {
+      role: 'user',
+      content: dto.prompt,
+    });
+
+    this.generateService.addMessage(dto.sessionId, {
+      role: 'assistant',
+      content: result.text,
+    });
     return {
       result: result.text,
     };

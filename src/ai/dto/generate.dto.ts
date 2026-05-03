@@ -6,6 +6,11 @@ export class GenerateRequest {
   @MinLength(1)
   @MaxLength(10_000)
   prompt: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  sessionId: string;
 }
 
 export class GenerateResponse {
