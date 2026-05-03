@@ -22,6 +22,8 @@ import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 import { GenerateService } from './generate/generate.service';
 import { randomUUID } from 'crypto';
 import { AppLogger } from 'src/logger/logger.service';
+import { plainToInstance } from 'class-transformer';
+import { validateSync } from 'class-validator';
 
 @Injectable()
 export class AiService {
@@ -114,18 +116,17 @@ export class AiService {
     severity: 'info' | 'warning' | 'error';
   } {
     try {
-      const parsed = JSON.parse(text);
+      const json = JSON.parse(text);
 
-      return {
-        analysis: parsed.analysis ?? '',
-        suggestions: Array.isArray(parsed.suggestions)
-          ? parsed.suggestions
-          : [],
-        severity:
-          parsed.severity === 'warning' || parsed.severity === 'error'
-            ? parsed.severity
-            : 'info',
-      };
+      const dto = plainToInstance(AnalyzeArticleResponse, json);
+
+      const errors = validateSync(dto);
+
+      if (errors.length > 0) {
+        throw new Error('Invalid schema');
+      }
+
+      return dto;
     } catch {
       return {
         analysis: text,
