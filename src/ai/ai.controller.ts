@@ -1,16 +1,13 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { SummarizeArticleRequest } from './dto/summarize.dto';
 import { Public } from 'src/auth/public.decorator';
-import { RateLimitService } from 'src/ai/rate-limit/rate-limit.service';
+import { RateLimitGuard } from 'src/ai/rate-limit-guard/rate-limit.guard';
 
+@UseGuards(RateLimitGuard)
 @Controller('ai')
-// @Throttle
 export class AiController {
-  constructor(
-    private readonly aiService: AiService,
-    private readonly rateLimit: RateLimitService,
-  ) {}
+  constructor(private readonly aiService: AiService) {}
 
   @Public()
   @Get('health')
@@ -24,7 +21,6 @@ export class AiController {
     @Param('articleId') articleId: string,
     @Body() dto: SummarizeArticleRequest,
   ) {
-    // this.rateLimit.check();
     return this.aiService.summarize(articleId, dto);
   }
 }
