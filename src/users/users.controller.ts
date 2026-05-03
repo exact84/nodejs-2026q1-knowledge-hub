@@ -16,7 +16,9 @@ import { UsersService } from './users.service';
 import { PublicUser } from './entities/user.entity';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
 @Controller('user')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

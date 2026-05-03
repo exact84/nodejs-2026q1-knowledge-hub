@@ -16,7 +16,9 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 import { GetCategoriesQueryDto } from './dto/get-categories-query.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
 @Controller('category')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}

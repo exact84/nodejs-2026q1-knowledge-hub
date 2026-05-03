@@ -32,6 +32,15 @@ async function bootstrap(): Promise<void> {
     .setTitle('Knowledge Hub API')
     .setDescription('REST API for users, articles, categories and comments')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'access-token',
+    )
+    .addSecurityRequirements('access-token')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

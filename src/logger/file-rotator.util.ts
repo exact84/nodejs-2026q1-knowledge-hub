@@ -27,8 +27,6 @@ async function ensureLogDirectory(): Promise<void> {
 }
 
 function getLogFilePath(): string {
-  console.log('process.cwd', process.cwd());
-  console.log('log-dir', LOG_DIR);
   return path.join(LOG_DIR, LOG_FILE_NAME);
 }
 

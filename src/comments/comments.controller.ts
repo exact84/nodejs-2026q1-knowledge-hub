@@ -16,7 +16,9 @@ import { Comment } from './entities/comment.entity';
 import { CommentsService } from './comments.service';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
 @Controller('comment')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}

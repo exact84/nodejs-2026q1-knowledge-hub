@@ -16,7 +16,9 @@ import { Article } from './entities/article.entity';
 import { GetArticlesQueryDto } from './dto/get-articles-query.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { PaginatedResponse } from '../common/pagination/paginated-response.type';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiBearerAuth('access-token')
 @Controller('article')
 export class ArticlesController {
   constructor(private readonly articlesService: ArticlesService) {}
