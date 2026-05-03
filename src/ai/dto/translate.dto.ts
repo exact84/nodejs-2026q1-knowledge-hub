@@ -8,3 +8,9 @@ export class TranslateArticleRequest {
   @IsString()
   sourceLanguage?: string;
 }
+
+export class TranslateArticleResponse {
+  articleId: string;
+  translatedText: string;
+  detectedLanguage: string;
+}

@@ -7,21 +7,39 @@ import { buildSummarizePrompt } from './prompts/summarize.prompt';
 import { ArticlesService } from 'src/articles/articles.service';
 import { GeminiService } from './gemini/gemini.service';
 import { CacheService } from './cache/cache.service';
+import { UsageService } from './usage/usage.service';
+import {
+  AnalyzeArticleRequest,
+  AnalyzeArticleResponse,
+} from './dto/analyze.dto';
+import { buildAnalyzePrompt } from './prompts/analyze.prompt';
+import {
+  TranslateArticleRequest,
+  TranslateArticleResponse,
+} from './dto/translate.dto';
+import { buildTranslatePrompt } from './prompts/translate.prompt';
+import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 
 @Injectable()
 export class AiService {
   constructor(
     private readonly articlesService: ArticlesService,
     private readonly gemini: GeminiService,
+    private readonly usage: UsageService,
     private readonly cache: CacheService,
   ) {}
 
-  async summarize(articleId: string, dto: SummarizeArticleRequest) {
+  async summarize(
+    articleId: string,
+    dto: SummarizeArticleRequest,
+  ): Promise<SummarizeArticleResponse> {
     const article = await this.articlesService.getOne(articleId);
 
     if (!article) {
       throw new NotFoundException();
     }
+
+    this.usage.trackRequest('summarize');
 
     const maxLength = dto.maxLength ?? 'medium';
 
@@ -32,24 +50,167 @@ export class AiService {
       options: { maxLength },
     });
 
-    const cached = this.cache.get<SummarizeArticleResponse>(cacheKey);
-    if (cached) return cached;
-
     const prompt = buildSummarizePrompt(article.content, maxLength);
 
-    const result = await this.gemini.generate(prompt);
+    return this.runAiRequest({
+      cacheKey,
+      prompt,
+      mapResult: (text) => ({
+        articleId,
+        summary: text,
+        originalLength: article.content.length,
+        summaryLength: text.length,
+      }),
+    });
+  }
 
-    const response: SummarizeArticleResponse = {
+  async analyze(
+    articleId: string,
+    dto: AnalyzeArticleRequest,
+  ): Promise<AnalyzeArticleResponse> {
+    const article = await this.articlesService.getOne(articleId);
+
+    if (!article) {
+      throw new NotFoundException();
+    }
+
+    this.usage.trackRequest('analyze');
+
+    const task = dto.task ?? 'review';
+
+    const cacheKey = this.cache.buildCacheKey({
+      type: 'analyze',
       articleId,
-      summary: result,
-      originalLength: article.content.length,
-      summaryLength: result.length,
-    };
+      updatedAt: article.updatedAt.toString(),
+      options: { task },
+    });
+
+    const prompt = buildAnalyzePrompt(article.content, task);
+
+    return this.runAiRequest({
+      cacheKey,
+      prompt,
+      mapResult: (text) => {
+        const parsed = this.parseAnalyzeResult(text);
+
+        return {
+          articleId,
+          analysis: parsed.analysis,
+          suggestions: parsed.suggestions,
+          severity: parsed.severity,
+        };
+      },
+    });
+  }
+
+  private parseAnalyzeResult(text: string): {
+    analysis: string;
+    suggestions: string[];
+    severity: 'info' | 'warning' | 'error';
+  } {
+    try {
+      const parsed = JSON.parse(text);
+
+      return {
+        analysis: parsed.analysis ?? '',
+        suggestions: Array.isArray(parsed.suggestions)
+          ? parsed.suggestions
+          : [],
+        severity:
+          parsed.severity === 'warning' || parsed.severity === 'error'
+            ? parsed.severity
+            : 'info',
+      };
+    } catch {
+      return {
+        analysis: text,
+        suggestions: [],
+        severity: 'info',
+      };
+    }
+  }
+
+  async translate(
+    articleId: string,
+    dto: TranslateArticleRequest,
+  ): Promise<TranslateArticleResponse> {
+    const article = await this.articlesService.getOne(articleId);
+
+    if (!article) {
+      throw new NotFoundException();
+    }
+
+    this.usage.trackRequest('translate');
+
+    const cacheKey = this.cache.buildCacheKey({
+      type: 'translate',
+      articleId,
+      updatedAt: article.updatedAt.toString(),
+      options: {
+        targetLanguage: dto.targetLanguage,
+        sourceLanguage: dto.sourceLanguage,
+      },
+    });
+
+    const prompt = buildTranslatePrompt(
+      article.content,
+      dto.targetLanguage,
+      dto.sourceLanguage,
+    );
+
+    return this.runAiRequest({
+      cacheKey,
+      prompt,
+      mapResult: (text) => ({
+        articleId,
+        translatedText: text,
+        detectedLanguage: dto.sourceLanguage ?? 'auto',
+      }),
+    });
+  }
+
+  private async runAiRequest<T>({
+    cacheKey,
+    prompt,
+    mapResult,
+  }: {
+    cacheKey: string;
+    prompt: string;
+    mapResult: (text: string) => T;
+  }): Promise<T> {
+    const cached = this.cache.get<T>(cacheKey);
+    if (cached) return cached;
+
+    const start = Date.now();
+    const result = await this.gemini.generate(prompt);
+    this.usage.trackLatency(Date.now() - start);
+
+    const tokens = result.raw?.usageMetadata?.totalTokenCount;
+    if (tokens) {
+      this.usage.trackTokens(tokens);
+    }
+
+    const response = mapResult(result.text);
 
     this.cache.set(cacheKey, response);
 
-    // this.usage.track('summarize');
-
     return response;
+  }
+
+  async generate(dto: GenerateRequest): Promise<GenerateResponse> {
+    this.usage.trackRequest('generate');
+
+    const start = Date.now();
+    const result = await this.gemini.generate(dto.prompt);
+    this.usage.trackLatency(Date.now() - start);
+
+    const tokens = result.raw?.usageMetadata?.totalTokenCount;
+    if (tokens) {
+      this.usage.trackTokens(tokens);
+    }
+
+    return {
+      result: result.text,
+    };
   }
 }
