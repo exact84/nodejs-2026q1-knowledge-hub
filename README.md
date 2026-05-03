@@ -10,6 +10,10 @@ Features:
 - JWT authentication with refresh tokens
 - Role-based access control (RBAC)
 - Rate limiting for auth endpoints
+- AI endpoints for article summarize/translate/analyze
+- Gemini integration with configurable model and API key via .env
+- AI response caching with TTL and deterministic cache keys
+- AI usage statistics (requests, tokens, latency)
 - OpenAPI documentation available at `/doc`
 
 ## Downloading
@@ -39,6 +43,66 @@ Required variables:
 - `DOCKER_DATABASE_URL`
 - `LOG_LEVEL`
 - `LOG_MAX_FILE_SIZE`
+- `GEMINI_API_KEY`
+- `GEMINI_API_BASE_URL`
+- `GEMINI_MODEL`
+- `AI_RATE_LIMIT_RPM`
+- `AI_CACHE_TTL_SEC`
+
+## AI Setup (Gemini)
+
+### 1. How to obtain Gemini API key
+
+1. Open Google AI Studio: https://aistudio.google.com
+2. Sign in with your Google account.
+3. Open the API keys page from AI Studio.
+4. Click **Create API key**.
+5. Copy the generated key.
+
+### 2. Which Gemini model is used
+
+Default model in this project is:
+
+- `gemini-2.5-flash`
+
+It is configured by the `GEMINI_MODEL` environment variable.
+
+### 3. Exact setup steps after cloning
+
+Fill required variables in `.env`:
+
+- `GEMINI_API_KEY`
+- `GEMINI_API_BASE_URL`
+- `GEMINI_MODEL`
+- `AI_RATE_LIMIT_RPM`
+- `AI_CACHE_TTL_SEC`
+
+Paste your Gemini API key into:
+
+- `GEMINI_API_KEY=<your-real-gemini-api-key>`
+
+### 4. How to test AI endpoints
+
+1. Endpoints:
+
+- `POST /ai/articles/:articleId/summarize`
+- `POST /ai/articles/:articleId/translate`
+- `POST /ai/articles/:articleId/analyze`
+- `POST /ai/generate`
+- `GET /ai/stats`
+
+3. Suggested flow:
+
+- Create or seed article data.
+- Login via `POST /auth/login` to get `accessToken`.
+- Call AI endpoints from Swagger (`/doc`) using Authorize.
+
+### 5. Known limitations
+
+- Gemini free tier has request/token quotas and can return 429.
+- Model response latency depends on prompt size and upstream load.
+- Regional availability and model access can vary by account/location.
+- Upstream service timeouts or temporary unavailability can occur.
 
 ## Installing NPM modules
 
