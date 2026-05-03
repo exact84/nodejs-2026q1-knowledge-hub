@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
+import { AppLogger } from 'src/logger/logger.service';
 
 type GeminiRawResponse = {
   text: string;
@@ -13,7 +14,10 @@ type GeminiRawResponse = {
 
 @Injectable()
 export class GeminiService {
-  constructor(private readonly http: HttpService) {}
+  constructor(
+    private readonly http: HttpService,
+    private readonly logger: AppLogger,
+  ) {}
 
   async generate(prompt: string): Promise<GeminiRawResponse> {
     return this.withRetry(() => this.callGemini(prompt));
@@ -56,11 +60,23 @@ export class GeminiService {
       try {
         return await fn();
       } catch (error: any) {
+        const details = this.extractSafeErrorDetails(error);
         const isLastAttempt = attempt === maxRetries - 1;
 
         if (!this.shouldRetry(error) || isLastAttempt) {
           this.mapError(error);
         }
+
+        this.logger.logWithDetails(
+          'warn',
+          'Gemini request failed, retrying',
+          {
+            ...details,
+            attempt: attempt + 1,
+            maxRetries,
+          },
+          GeminiService.name,
+        );
 
         const delay = baseDelay * 2 ** attempt;
         await this.sleep(delay);
@@ -89,21 +105,63 @@ export class GeminiService {
   }
 
   private mapError(error: any): never {
+    const details = this.extractSafeErrorDetails(error);
+
     if (error.code === 'ECONNABORTED') {
+      this.logger.logWithDetails(
+        'warn',
+        'Gemini timeout',
+        details,
+        GeminiService.name,
+      );
       throw new ServiceUnavailableException('AI timeout');
     }
 
     const status = error.response?.status;
 
     if (status === 429) {
+      this.logger.logWithDetails(
+        'warn',
+        'Gemini upstream rate limit',
+        details,
+        GeminiService.name,
+      );
       throw new ServiceUnavailableException('AI rate limit');
     }
 
     if (status === 401) {
+      this.logger.logWithDetails(
+        'error',
+        'Gemini auth error',
+        details,
+        GeminiService.name,
+      );
       throw new InternalServerErrorException('AI auth error');
     }
 
+    this.logger.logWithDetails(
+      'error',
+      'Gemini unavailable',
+      details,
+      GeminiService.name,
+    );
+
     throw new ServiceUnavailableException('AI unavailable');
+  }
+
+  private extractSafeErrorDetails(error: any): {
+    code?: string;
+    status?: number;
+    message?: string;
+  } {
+    return {
+      code: error?.code,
+      status: error?.response?.status,
+      message:
+        typeof error?.message === 'string'
+          ? error.message
+          : 'Unknown upstream error',
+    };
   }
 
   private sleep(ms: number): Promise<void> {

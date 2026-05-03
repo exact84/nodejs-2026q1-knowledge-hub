@@ -4,6 +4,10 @@ const SENSITIVE_KEYS = [
   'accessToken',
   'refreshToken',
   'authorization',
+  'apiKey',
+  'x-api-key',
+  'cookie',
+  'set-cookie',
 ] as const;
 
 const REDACTED_VALUE = '[REDACTED]';
