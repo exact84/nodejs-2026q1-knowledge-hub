@@ -1,15 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { UsageService } from '../usage/usage.service';
 
 type CacheEntry<T> = {
   value: T;
   expiresAt: number;
-};
-
-type CacheKeyParams = {
-  articleId: string;
-  updatedAt: Date;
-  type: 'summarize' | 'translate' | 'analyze';
-  options: unknown;
 };
 
 @Injectable()
@@ -18,6 +12,8 @@ export class CacheService {
 
   private hits = 0;
   private misses = 0;
+
+  constructor(private readonly usage: UsageService) {}
 
   buildCacheKey(params: {
     articleId: string;
@@ -34,20 +30,26 @@ export class CacheService {
   }
 
   get<T>(key: string): T | null {
+    const start = Date.now();
+
     const entry = this.store.get(key);
 
     if (!entry) {
       this.misses += 1;
+      this.usage.trackCacheMiss();
       return null;
     }
 
     if (Date.now() > entry.expiresAt) {
       this.store.delete(key);
       this.misses += 1;
+      this.usage.trackCacheMiss();
       return null;
     }
 
     this.hits += 1;
+    this.usage.trackCacheHit();
+
     return entry.value as T;
   }
 

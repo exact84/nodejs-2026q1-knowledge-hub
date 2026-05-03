@@ -19,6 +19,8 @@ export class UsageService {
   private latencyCount = 0;
   private minLatencyMs = Infinity;
   private maxLatencyMs = 0;
+  private cacheHits = 0;
+  private cacheMisses = 0;
 
   trackRequest(endpoint: Endpoint): void {
     this.totalRequests += 1;
@@ -36,6 +38,14 @@ export class UsageService {
     if (ms > this.maxLatencyMs) this.maxLatencyMs = ms;
   }
 
+  trackCacheHit(): void {
+    this.cacheHits += 1;
+  }
+
+  trackCacheMiss(): void {
+    this.cacheMisses += 1;
+  }
+
   getStats() {
     return {
       totalRequests: this.totalRequests,
@@ -49,6 +59,14 @@ export class UsageService {
         minMs: this.latencyCount === 0 ? 0 : this.minLatencyMs,
         maxMs: this.maxLatencyMs,
         samples: this.latencyCount,
+      },
+      cache: {
+        hits: this.cacheHits,
+        misses: this.cacheMisses,
+        hitRate:
+          this.cacheHits + this.cacheMisses === 0
+            ? 0
+            : this.cacheHits / (this.cacheHits + this.cacheMisses),
       },
     };
   }

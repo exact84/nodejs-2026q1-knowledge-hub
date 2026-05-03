@@ -16,6 +16,7 @@ import { TranslateArticleRequest } from './dto/translate.dto';
 import { AnalyzeArticleRequest } from './dto/analyze.dto';
 import { GenerateRequest } from './dto/generate.dto';
 
+@Public()
 @UseGuards(RateLimitGuard)
 @Controller('ai')
 export class AiController {
@@ -35,7 +36,6 @@ export class AiController {
     return this.usage.getStats();
   }
 
-  @Public()
   @Post('articles/:articleId/summarize')
   summarize(
     @Param('articleId', new ParseUUIDPipe()) articleId: string,

@@ -20,6 +20,8 @@ import {
 import { buildTranslatePrompt } from './prompts/translate.prompt';
 import { GenerateRequest, GenerateResponse } from './dto/generate.dto';
 import { GenerateService } from './generate/generate.service';
+import { randomUUID } from 'crypto';
+import { AppLogger } from 'src/logger/logger.service';
 
 @Injectable()
 export class AiService {
@@ -29,6 +31,7 @@ export class AiService {
     private readonly usage: UsageService,
     private readonly cache: CacheService,
     private readonly generateService: GenerateService,
+    private readonly logger: AppLogger,
   ) {}
 
   async summarize(
@@ -196,29 +199,40 @@ export class AiService {
 
     this.cache.set(cacheKey, response);
 
+    this.logger.logWithDetails(
+      'debug',
+      'AI usage stats updated',
+      this.usage.getStats(),
+      AiService.name,
+    );
+
     return response;
   }
 
   async generate(dto: GenerateRequest): Promise<GenerateResponse> {
     this.usage.trackRequest('generate');
 
-    const context = this.generateService.buildContext(dto.sessionId);
+    const sessionId = dto.sessionId ?? randomUUID();
+
+    const context = this.generateService.buildContext(sessionId);
 
     const prompt = context ? `${context}\nuser: ${dto.prompt}` : dto.prompt;
 
+    const start = Date.now();
     const result = await this.gemini.generate(prompt);
+    this.usage.trackLatency(Date.now() - start);
 
     const tokens = result.raw?.usageMetadata?.totalTokenCount;
     if (tokens) {
       this.usage.trackTokens(tokens);
     }
 
-    this.generateService.addMessage(dto.sessionId, {
+    this.generateService.addMessage(sessionId, {
       role: 'user',
       content: dto.prompt,
     });
 
-    this.generateService.addMessage(dto.sessionId, {
+    this.generateService.addMessage(sessionId, {
       role: 'assistant',
       content: result.text,
     });
