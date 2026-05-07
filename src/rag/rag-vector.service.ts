@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { QdrantClient } from '@qdrant/js-client-rest';
+import { QdrantPoint } from './types/qdrant-point';
 
 @Injectable()
 export class RagVectorService implements OnModuleInit {
@@ -12,12 +13,37 @@ export class RagVectorService implements OnModuleInit {
   }
 
   public async onModuleInit(): Promise<void> {
-    try {
-      const collections = await this.client.getCollections();
+    await this.ensureCollection();
+  }
 
-      console.log('[QDRANT] connected:', collections);
-    } catch (error: unknown) {
-      console.error('[QDRANT] connection failed:', error);
+  public async ensureCollection(): Promise<void> {
+    const collectionName = process.env.RAG_VECTOR_COLLECTION!;
+
+    const collections = await this.client.getCollections();
+
+    const exists = collections.collections.some(
+      (c) => c.name === collectionName,
+    );
+
+    if (exists) {
+      console.log(`[QDRANT] collection already exists: ${collectionName}`);
+      return;
     }
+
+    await this.client.createCollection(collectionName, {
+      vectors: {
+        size: Number(process.env.RAG_EMBEDDING_SIZE ?? 3072),
+        distance: 'Cosine',
+      },
+    });
+
+    console.log(`[QDRANT] collection created: ${collectionName}`);
+  }
+
+  public async upsertPoints(points: QdrantPoint[]): Promise<void> {
+    await this.client.upsert(process.env.RAG_VECTOR_COLLECTION!, {
+      wait: true,
+      points,
+    });
   }
 }
