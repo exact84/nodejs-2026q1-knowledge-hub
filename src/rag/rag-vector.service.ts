@@ -46,4 +46,19 @@ export class RagVectorService implements OnModuleInit {
       points,
     });
   }
+
+  public async search(
+    vector: number[],
+    options: {
+      limit: number;
+      filter?: unknown;
+    },
+  ) {
+    return this.client.search(process.env.RAG_VECTOR_COLLECTION!, {
+      vector,
+      limit: options.limit,
+      with_payload: true,
+      filter: options.filter as never,
+    });
+  }
 }

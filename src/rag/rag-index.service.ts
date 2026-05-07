@@ -1,15 +1,14 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-// import { PointStruct } from '@qdrant/js-client-rest/dist/esm/types';
-
 import { PrismaService } from '../prisma/prisma.service';
-
 import { RagChunkingService } from './rag-chunking.service';
 import { RagEmbeddingService } from './rag-embedding.service';
 import { RagVectorService } from './rag-vector.service';
 import { QdrantPoint } from './types/qdrant-point';
+import { v5 as uuidv5 } from 'uuid';
 
 @Injectable()
 export class RagIndexService implements OnModuleInit {
+  private static readonly NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341';
   private readonly logger = new Logger(RagIndexService.name);
 
   public constructor(
@@ -46,7 +45,9 @@ export class RagIndexService implements OnModuleInit {
         );
 
         points.push({
-          id: `${article.id}_${chunk.index}`,
+          // id: `${article.id}_${chunk.index}`,
+          id: uuidv5(`${article.id}:${chunk.index}`, RagIndexService.NAMESPACE),
+
           vector: embedding,
           payload: {
             articleId: article.id,
