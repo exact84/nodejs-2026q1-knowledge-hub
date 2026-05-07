@@ -34,6 +34,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      vectordb:
+        condition: service_healthy
     env_file:
       - .env
     environment:
@@ -50,6 +52,22 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL}
+
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_API_BASE_URL: ${GEMINI_API_BASE_URL}
+      GEMINI_MODEL: ${GEMINI_MODEL}
+      AI_RATE_LIMIT_RPM: ${AI_RATE_LIMIT_RPM}
+      AI_CACHE_TTL_SEC: ${AI_CACHE_TTL_SEC}
+
+      GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL}
+
+      RAG_VECTOR_DB_PROVIDER: ${RAG_VECTOR_DB_PROVIDER}
+      RAG_VECTOR_DB_URL: ${DOCKER_RAG_VECTOR_DB_URL}
+      RAG_VECTOR_COLLECTION: ${RAG_VECTOR_COLLECTION}
+
+      RAG_CHUNK_SIZE: ${RAG_CHUNK_SIZE}
+      RAG_CHUNK_OVERLAP: ${RAG_CHUNK_OVERLAP}
+      RAG_CONVERSATION_MAX_MESSAGES: ${RAG_CONVERSATION_MAX_MESSAGES}
     ports:
       - '${PORT}:${PORT}'
     networks:
@@ -81,10 +99,35 @@ services:
       db:
         condition: service_healthy
 
+  vectordb:
+    image: qdrant/qdrant
+    container_name: knowledge-hub-qdrant
+
+    restart: unless-stopped
+
+    ports:
+      - '6333:6333'
+
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+    networks:
+      - knowledge-hub-network
+
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --spider -q http://localhost:6333/healthz || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   knowledge-hub-network:
     driver: bridge
 
 volumes:
   postgres_data:
-  
+  qdrant_data:

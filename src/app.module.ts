@@ -21,6 +21,7 @@ import { LoggerModule } from './logger/logger.module';
 import { HttpLoggingInterceptor } from './common/interceptors/http-logging.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AiModule } from './ai/ai.module';
+import { RagModule } from './rag/rag.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { AiModule } from './ai/ai.module';
     TokensModule,
     LoggerModule,
     AiModule,
+    RagModule,
   ],
   controllers: [AppController],
   providers: [
