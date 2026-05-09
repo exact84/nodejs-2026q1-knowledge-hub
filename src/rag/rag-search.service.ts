@@ -1,26 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { RagSearchRequest, RagSearchResponse } from './dto/search.dto';
-import { RagEmbeddingService } from './rag-embedding.service';
 import { RagVectorService } from './rag-vector.service';
+import { RagService } from './rag.service';
+import { RAG_CONFIG } from './rag-config';
 
 @Injectable()
 export class RagSearchService {
   public constructor(
-    private readonly ragEmbeddingService: RagEmbeddingService,
+    private readonly ragService: RagService,
     private readonly ragVectorService: RagVectorService,
   ) {}
 
   public async search(request: RagSearchRequest): Promise<RagSearchResponse> {
-    const limit = request.limit ?? 5;
+    const limit = request.limit ?? RAG_CONFIG.SEARCH_LIMIT;
 
-    const queryVector = await this.ragEmbeddingService.generateEmbedding(
-      request.query,
-    );
+    const queryVector = await this.ragService.generateEmbedding(request.query);
+
+    console.log('[RAG] query:', request.query);
+    console.log('[RAG] vector dim:', queryVector.length);
+    console.log('[RAG] filter:', JSON.stringify(this.buildFilter(request)));
 
     const results = await this.ragVectorService.search(queryVector, {
       limit,
       filter: this.buildFilter(request),
+      scoreThreshold: RAG_CONFIG.SCORE_THRESHOLD,
     });
+    results.sort((a, b) => b.score - a.score);
+
+    console.log(
+      '[RAG] results scores:',
+      results.map((r) => r.score),
+    );
 
     return {
       results: results.map((r) => ({
@@ -32,13 +42,31 @@ export class RagSearchService {
     };
   }
 
-  private buildFilter(request: RagSearchRequest) {
-    const must: unknown[] = [];
+  private buildFilter(request: RagSearchRequest): QdrantFilter | undefined {
+    const must: QdrantFilter['must'] = [];
 
     if (request.articleStatus) {
       must.push({
         key: 'articleStatus',
         match: { value: request.articleStatus },
+      });
+    }
+
+    if (request.categoryId) {
+      must.push({
+        key: 'categoryId',
+        match: {
+          value: request.categoryId,
+        },
+      });
+    }
+
+    if (request.tags?.length) {
+      must.push({
+        key: 'tags',
+        match: {
+          any: request.tags,
+        } as never,
       });
     }
 

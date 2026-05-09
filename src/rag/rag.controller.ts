@@ -2,11 +2,16 @@ import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { RagSearchRequest, RagSearchResponse } from './dto/search.dto';
 import { RagSearchService } from './rag-search.service';
 import { Public } from 'src/auth/public.decorator';
+import { RagChatRequest, RagChatResponse } from './dto/chat.dto';
+import { RagChatService } from './rag-chat.service';
 
 @Public()
-@Controller('rag')
+@Controller('ai/rag')
 export class RagController {
-  constructor(private readonly ragSearchService: RagSearchService) {}
+  constructor(
+    private readonly ragSearchService: RagSearchService,
+    private readonly ragChatService: RagChatService,
+  ) {}
 
   @Post('search')
   public async search(
@@ -17,5 +22,14 @@ export class RagController {
     }
 
     return this.ragSearchService.search(body);
+  }
+
+  @Post('chat')
+  public async chat(@Body() body: RagChatRequest): Promise<RagChatResponse> {
+    if (!body.question) {
+      throw new BadRequestException('question is required');
+    }
+
+    return this.ragChatService.chat(body);
   }
 }

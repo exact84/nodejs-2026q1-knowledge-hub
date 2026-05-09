@@ -6,6 +6,7 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { AppLogger } from 'src/logger/logger.service';
+import { FALLBACK_AI_MODEL } from 'src/common/constants';
 
 type GeminiRawResponse = {
   text: string;
@@ -24,7 +25,8 @@ export class GeminiService {
   }
 
   private async callGemini(prompt: string): Promise<GeminiRawResponse> {
-    const url = `${process.env.GEMINI_API_BASE_URL}/v1beta/models/${process.env.GEMINI_MODEL}:generateContent`;
+    const model = process.env.GEMINI_MODEL || FALLBACK_AI_MODEL;
+    const url = `${process.env.GEMINI_API_BASE_URL}/v1beta/models/${model}:generateContent`;
 
     const body = {
       contents: [

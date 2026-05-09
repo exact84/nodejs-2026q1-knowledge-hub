@@ -1,10 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { QdrantPoint } from './types/qdrant-point';
+import { RAG_CONFIG } from './rag-config';
 
 @Injectable()
 export class RagVectorService implements OnModuleInit {
   private readonly client: QdrantClient;
+  private readonly collectionName = process.env.RAG_VECTOR_COLLECTION!;
 
   public constructor() {
     this.client = new QdrantClient({
@@ -17,31 +19,29 @@ export class RagVectorService implements OnModuleInit {
   }
 
   public async ensureCollection(): Promise<void> {
-    const collectionName = process.env.RAG_VECTOR_COLLECTION!;
-
     const collections = await this.client.getCollections();
 
     const exists = collections.collections.some(
-      (c) => c.name === collectionName,
+      (c) => c.name === this.collectionName,
     );
 
     if (exists) {
-      console.log(`[QDRANT] collection already exists: ${collectionName}`);
+      console.log(`[QDRANT] collection already exists: ${this.collectionName}`);
       return;
     }
 
-    await this.client.createCollection(collectionName, {
+    await this.client.createCollection(this.collectionName, {
       vectors: {
         size: Number(process.env.RAG_EMBEDDING_SIZE ?? 3072),
         distance: 'Cosine',
       },
     });
 
-    console.log(`[QDRANT] collection created: ${collectionName}`);
+    console.log(`[QDRANT] collection created: ${this.collectionName}`);
   }
 
   public async upsertPoints(points: QdrantPoint[]): Promise<void> {
-    await this.client.upsert(process.env.RAG_VECTOR_COLLECTION!, {
+    await this.client.upsert(this.collectionName, {
       wait: true,
       points,
     });
@@ -51,14 +51,32 @@ export class RagVectorService implements OnModuleInit {
     vector: number[],
     options: {
       limit: number;
-      filter?: unknown;
+      filter?: QdrantFilter;
+      scoreThreshold?: number;
     },
   ) {
-    return this.client.search(process.env.RAG_VECTOR_COLLECTION!, {
+    return this.client.search(this.collectionName, {
       vector,
-      limit: options.limit,
+      limit: options.limit ?? RAG_CONFIG.SEARCH_LIMIT,
       with_payload: true,
       filter: options.filter as never,
+      score_threshold: options.scoreThreshold ?? RAG_CONFIG.SCORE_THRESHOLD,
+    });
+  }
+
+  async deleteByArticleId(articleId: string): Promise<void> {
+    await this.client.delete(this.collectionName, {
+      filter: {
+        must: [
+          {
+            key: 'articleId',
+            match: {
+              value: articleId,
+            },
+          },
+        ],
+      },
+      wait: true,
     });
   }
 }

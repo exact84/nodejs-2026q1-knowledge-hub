@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RagChunkingService } from './rag-chunking.service';
-import { RagEmbeddingService } from './rag-embedding.service';
 import { RagVectorService } from './rag-vector.service';
 import { QdrantPoint } from './types/qdrant-point';
 import { v5 as uuidv5 } from 'uuid';
+import { RagService } from './rag.service';
 
 @Injectable()
 export class RagIndexService implements OnModuleInit {
@@ -14,7 +14,7 @@ export class RagIndexService implements OnModuleInit {
   public constructor(
     private readonly prismaService: PrismaService,
     private readonly ragChunkingService: RagChunkingService,
-    private readonly ragEmbeddingService: RagEmbeddingService,
+    private readonly ragService: RagService,
     private readonly ragVectorService: RagVectorService,
   ) {}
 
@@ -28,38 +28,34 @@ export class RagIndexService implements OnModuleInit {
       where: {
         status: 'published',
       },
+      include: { tags: true },
     });
 
     let indexedChunks = 0;
 
     for (const article of articles) {
-      const content = this.stripHtml(article.content);
+      await this.ragVectorService.deleteByArticleId(article.id);
 
+      const content = this.stripHtml(article.content);
       const chunks = this.ragChunkingService.chunkText(content);
 
-      const points: QdrantPoint[] = [];
+      const embeddings = await Promise.all(
+        chunks.map((chunk) => this.ragService.generateEmbedding(chunk.text)),
+      );
 
-      for (const chunk of chunks) {
-        const embedding = await this.ragEmbeddingService.generateEmbedding(
-          chunk.text,
-        );
-
-        points.push({
-          // id: `${article.id}_${chunk.index}`,
-          id: uuidv5(`${article.id}:${chunk.index}`, RagIndexService.NAMESPACE),
-
-          vector: embedding,
-          payload: {
-            articleId: article.id,
-            articleTitle: article.title,
-            articleStatus: article.status,
-            chunkIndex: chunk.index,
-            content: chunk.text,
-          },
-        });
-
-        indexedChunks += 1;
-      }
+      const points: QdrantPoint[] = chunks.map((chunk, index) => ({
+        id: uuidv5(`${article.id}:${chunk.index}`, RagIndexService.NAMESPACE),
+        vector: embeddings[index],
+        payload: {
+          articleId: article.id,
+          articleTitle: article.title,
+          articleStatus: article.status,
+          categoryId: article.categoryId,
+          tags: article.tags.map((tag) => tag.name),
+          chunkIndex: chunk.index,
+          content: chunk.text,
+        },
+      }));
 
       if (points.length > 0) {
         await this.ragVectorService.upsertPoints(points);
@@ -67,7 +63,6 @@ export class RagIndexService implements OnModuleInit {
     }
 
     this.logger.log(`Indexed articles: ${articles.length}`);
-
     this.logger.log(`Indexed chunks: ${indexedChunks}`);
   }
 

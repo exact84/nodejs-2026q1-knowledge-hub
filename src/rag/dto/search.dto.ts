@@ -1,17 +1,36 @@
+import { ArticleStatus } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class RagSearchRequest {
   @ApiProperty({ example: 'What is NestJS?' })
   @IsString()
   query: string;
   @ApiProperty({ example: 5, required: false })
-  @IsNumber()
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
-  @ApiProperty({ example: 'published', required: false })
+  @ApiProperty({
+    enum: ArticleStatus,
+    example: 'published',
+    required: false,
+  })
+  @IsEnum(ArticleStatus)
   @IsOptional()
-  articleStatus?: 'draft' | 'published' | 'archived';
+  articleStatus?: ArticleStatus;
   @ApiProperty({ example: '123', required: false })
   @IsString()
   @IsOptional()
@@ -23,11 +42,32 @@ export class RagSearchRequest {
   tags?: string[];
 }
 
+// export class RagSearchResponse {
+//   results: Array<{
+//     articleId: string;
+//     articleTitle: string;
+//     chunk: string;
+//     similarity: number;
+//   }>;
+// }
+
+export class RagSearchResultDto {
+  @ApiProperty()
+  articleId: string;
+
+  @ApiProperty()
+  articleTitle: string;
+
+  @ApiProperty()
+  chunk: string;
+
+  @ApiProperty()
+  similarity: number;
+}
+
 export class RagSearchResponse {
-  results: Array<{
-    articleId: string;
-    articleTitle: string;
-    chunk: string;
-    similarity: number;
-  }>;
+  @ApiProperty({
+    type: [RagSearchResultDto],
+  })
+  results: RagSearchResultDto[];
 }

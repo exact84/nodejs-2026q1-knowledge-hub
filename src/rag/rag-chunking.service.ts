@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 export interface RagChunk {
   index: number;
@@ -6,12 +6,7 @@ export interface RagChunk {
 }
 
 @Injectable()
-export class RagChunkingService implements OnModuleInit {
-  public onModuleInit(): void {
-    const chunks = this.chunkText('some very long text ...');
-    console.log(chunks);
-  }
-
+export class RagChunkingService {
   public chunkText(text: string): RagChunk[] {
     const chunkSize = Number(process.env.RAG_CHUNK_SIZE ?? 800);
     const overlap = Number(process.env.RAG_CHUNK_OVERLAP ?? 200);
