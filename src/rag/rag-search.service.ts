@@ -33,19 +33,33 @@ export class RagSearchService {
           String(r.payload?.content),
         );
 
+        const lexicalScore = this.calculateLexicalScore(
+          request.query,
+          String(r.payload?.content),
+        );
+
+        const mergedScore = score * 0.7 + lexicalScore * 0.3;
+
         return {
           ...r,
           rerankScore: score,
+          lexicalScore,
+          mergedScore,
         };
       }),
     );
 
-    reranked.sort((a, b) => b.rerankScore - a.rerankScore);
+    reranked.sort((a, b) => b.mergedScore - a.mergedScore);
     const top = reranked.slice(0, limit);
 
     console.log(
-      '[RAG] results scores:',
-      reranked.map((r) => r.rerankScore),
+      '[RAG] merged scores:',
+      top.map((r) => ({
+        semantic: r.score,
+        rerank: r.rerankScore,
+        lexical: r.lexicalScore,
+        merged: r.mergedScore,
+      })),
     );
 
     return {
@@ -87,5 +101,21 @@ export class RagSearchService {
     }
 
     return must.length ? { must } : undefined;
+  }
+
+  private calculateLexicalScore(query: string, content: string): number {
+    const queryTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+    const contentLower = content.toLowerCase();
+
+    let matches = 0;
+
+    for (const term of queryTerms) {
+      if (contentLower.includes(term)) {
+        matches += 1;
+      }
+    }
+
+    return matches / queryTerms.length;
   }
 }

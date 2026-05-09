@@ -19,7 +19,7 @@ export class RagIndexService implements OnModuleInit {
   ) {}
 
   public async onModuleInit(): Promise<void> {
-    await new Promise((r) => setTimeout(r, 1000)); // wait for other services to initialize
+    // await new Promise((r) => setTimeout(r, 1000)); // wait for other services to initialize
     await this.indexPublishedArticles();
   }
 
@@ -34,15 +34,23 @@ export class RagIndexService implements OnModuleInit {
     let indexedChunks = 0;
 
     for (const article of articles) {
+      const existing = await this.ragVectorService.getArticleIndexMetadata(
+        article.id,
+      );
+      const indexedAt = existing?.payload?.indexedAt as string | undefined;
+
+      if (indexedAt && new Date(indexedAt) >= article.updatedAt) {
+        this.logger.log(`Skipping unchanged article: ${article.title}`);
+        continue;
+      }
+
       await this.ragVectorService.deleteByArticleId(article.id);
 
       const content = this.stripHtml(article.content);
       const chunks = this.ragChunkingService.chunkText(content);
-
       const embeddings = await Promise.all(
         chunks.map((chunk) => this.ragService.generateEmbedding(chunk.text)),
       );
-
       const points: QdrantPoint[] = chunks.map((chunk, index) => ({
         id: uuidv5(`${article.id}:${chunk.index}`, RagIndexService.NAMESPACE),
         vector: embeddings[index],
@@ -54,15 +62,17 @@ export class RagIndexService implements OnModuleInit {
           tags: article.tags.map((tag) => tag.name),
           chunkIndex: chunk.index,
           content: chunk.text,
+          indexedAt: new Date().toISOString(),
         },
       }));
+
+      indexedChunks += points.length;
 
       if (points.length > 0) {
         await this.ragVectorService.upsertPoints(points);
       }
     }
 
-    this.logger.log(`Indexed articles: ${articles.length}`);
     this.logger.log(`Indexed chunks: ${indexedChunks}`);
   }
 

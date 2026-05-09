@@ -79,4 +79,26 @@ export class RagVectorService implements OnModuleInit {
       wait: true,
     });
   }
+
+  public async getArticleIndexMetadata(articleId: string) {
+    const result = await this.client.scroll(
+      process.env.RAG_VECTOR_COLLECTION!,
+      {
+        limit: 1,
+        with_payload: true,
+        filter: {
+          must: [
+            {
+              key: 'articleId',
+              match: {
+                value: articleId,
+              },
+            },
+          ],
+        },
+      },
+    );
+
+    return result.points[0];
+  }
 }
