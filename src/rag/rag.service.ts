@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { Injectable } from '@nestjs/common';
+import { RagServiceUnavailableException } from './rag-service-unavailable.exception';
 
 @Injectable()
 export class RagService {
@@ -15,22 +16,36 @@ export class RagService {
   }
 
   public async generateText(prompt: string): Promise<string> {
-    const response = await this.client.models.generateContent({
-      model: process.env.GEMINI_MODEL!,
-      contents: prompt,
-    });
+    try {
+      const response = await this.client.models.generateContent({
+        model: process.env.GEMINI_MODEL!,
+        contents: prompt,
+      });
 
-    return response.text ?? '';
+      return response.text ?? '';
+    } catch (error) {
+      console.error('[RAG] Gemini generateText failed', error);
+
+      throw new RagServiceUnavailableException(
+        'AI generation service unavailable',
+      );
+    }
   }
 
   public async generateEmbedding(text: string): Promise<number[]> {
-    const response = await this.client.models.embedContent({
-      model: process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-2',
+    try {
+      const response = await this.client.models.embedContent({
+        model: process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-2',
 
-      contents: text,
-    });
+        contents: text,
+      });
 
-    return response.embeddings?.[0]?.values ?? [];
+      return response.embeddings?.[0]?.values ?? [];
+    } catch (error) {
+      console.error('[RAG] Gemini embedding failed', error);
+
+      throw new RagServiceUnavailableException('Embedding service unavailable');
+    }
   }
 
   public async rerank(query: string, chunk: string): Promise<number> {

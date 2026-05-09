@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { QdrantPoint } from './types/qdrant-point';
 import { RAG_CONFIG } from './rag-config';
+import { RagServiceUnavailableException } from './rag-service-unavailable.exception';
 
 @Injectable()
 export class RagVectorService implements OnModuleInit {
@@ -41,10 +42,16 @@ export class RagVectorService implements OnModuleInit {
   }
 
   public async upsertPoints(points: QdrantPoint[]): Promise<void> {
-    await this.client.upsert(this.collectionName, {
-      wait: true,
-      points,
-    });
+    try {
+      await this.client.upsert(this.collectionName, {
+        wait: true,
+        points,
+      });
+    } catch (error) {
+      console.error('[RAG] Qdrant search failed', error);
+
+      throw new RagServiceUnavailableException('Vector database unavailable');
+    }
   }
 
   public async search(
@@ -55,29 +62,41 @@ export class RagVectorService implements OnModuleInit {
       scoreThreshold?: number;
     },
   ) {
-    return this.client.search(this.collectionName, {
-      vector,
-      limit: options.limit ?? RAG_CONFIG.SEARCH_LIMIT,
-      with_payload: true,
-      filter: options.filter as never,
-      score_threshold: options.scoreThreshold ?? RAG_CONFIG.SCORE_THRESHOLD,
-    });
+    try {
+      return await this.client.search(this.collectionName, {
+        vector,
+        limit: options.limit ?? RAG_CONFIG.SEARCH_LIMIT,
+        with_payload: true,
+        filter: options.filter as never,
+        score_threshold: options.scoreThreshold ?? RAG_CONFIG.SCORE_THRESHOLD,
+      });
+    } catch (error) {
+      console.error('[RAG] Qdrant search failed', error);
+
+      throw new RagServiceUnavailableException('Vector database unavailable');
+    }
   }
 
   async deleteByArticleId(articleId: string): Promise<void> {
-    await this.client.delete(this.collectionName, {
-      filter: {
-        must: [
-          {
-            key: 'articleId',
-            match: {
-              value: articleId,
+    try {
+      await this.client.delete(this.collectionName, {
+        filter: {
+          must: [
+            {
+              key: 'articleId',
+              match: {
+                value: articleId,
+              },
             },
-          },
-        ],
-      },
-      wait: true,
-    });
+          ],
+        },
+        wait: true,
+      });
+    } catch (error) {
+      console.error('[RAG] Qdrant search failed', error);
+
+      throw new RagServiceUnavailableException('Vector database unavailable');
+    }
   }
 
   public async getArticleIndexMetadata(articleId: string) {
