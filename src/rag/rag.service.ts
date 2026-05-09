@@ -32,4 +32,22 @@ export class RagService {
 
     return response.embeddings?.[0]?.values ?? [];
   }
+
+  public async rerank(query: string, chunk: string): Promise<number> {
+    const prompt = `
+Rate relevance of this chunk to question.
+
+Return ONLY number 0..1
+
+Question:
+${query}
+
+Chunk:
+${chunk}
+`;
+
+    const res = await this.generateText(prompt);
+
+    return Number(res.trim()) || 0;
+  }
 }

@@ -20,24 +20,40 @@ export class RagSearchService {
     console.log('[RAG] vector dim:', queryVector.length);
     console.log('[RAG] filter:', JSON.stringify(this.buildFilter(request)));
 
-    const results = await this.ragVectorService.search(queryVector, {
-      limit,
+    const candidates = await this.ragVectorService.search(queryVector, {
+      limit: RAG_CONFIG.RERANK_CANDIDATES,
       filter: this.buildFilter(request),
       scoreThreshold: RAG_CONFIG.SCORE_THRESHOLD,
     });
-    results.sort((a, b) => b.score - a.score);
+
+    const reranked = await Promise.all(
+      candidates.map(async (r) => {
+        const score = await this.ragService.rerank(
+          request.query,
+          String(r.payload?.content),
+        );
+
+        return {
+          ...r,
+          rerankScore: score,
+        };
+      }),
+    );
+
+    reranked.sort((a, b) => b.rerankScore - a.rerankScore);
+    const top = reranked.slice(0, limit);
 
     console.log(
       '[RAG] results scores:',
-      results.map((r) => r.score),
+      reranked.map((r) => r.rerankScore),
     );
 
     return {
-      results: results.map((r) => ({
+      results: top.map((r) => ({
         articleId: String(r.payload?.articleId),
         articleTitle: String(r.payload?.articleTitle),
         chunk: String(r.payload?.content),
-        similarity: r.score,
+        similarity: r.rerankScore,
       })),
     };
   }
