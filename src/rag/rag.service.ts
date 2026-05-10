@@ -1,0 +1,68 @@
+import { GoogleGenAI } from '@google/genai';
+import { Injectable } from '@nestjs/common';
+import { RagServiceUnavailableException } from './rag-service-unavailable.exception';
+
+@Injectable()
+export class RagService {
+  private readonly client: GoogleGenAI;
+
+  public constructor() {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is missing');
+    }
+    this.client = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    });
+  }
+
+  public async generateText(prompt: string): Promise<string> {
+    try {
+      const response = await this.client.models.generateContent({
+        model: process.env.GEMINI_MODEL!,
+        contents: prompt,
+      });
+
+      return response.text ?? '';
+    } catch (error) {
+      console.error('[RAG] Gemini generateText failed', error);
+
+      throw new RagServiceUnavailableException(
+        'AI generation service unavailable',
+      );
+    }
+  }
+
+  public async generateEmbedding(text: string): Promise<number[]> {
+    try {
+      const response = await this.client.models.embedContent({
+        model: process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-2',
+
+        contents: text,
+      });
+
+      return response.embeddings?.[0]?.values ?? [];
+    } catch (error) {
+      console.error('[RAG] Gemini embedding failed', error);
+
+      throw new RagServiceUnavailableException('Embedding service unavailable');
+    }
+  }
+
+  public async rerank(query: string, chunk: string): Promise<number> {
+    const prompt = `
+Rate relevance of this chunk to question.
+
+Return ONLY number 0..1
+
+Question:
+${query}
+
+Chunk:
+${chunk}
+`;
+
+    const res = await this.generateText(prompt);
+
+    return Number(res.trim()) || 0;
+  }
+}
