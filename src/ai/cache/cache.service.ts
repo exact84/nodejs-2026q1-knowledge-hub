@@ -30,8 +30,6 @@ export class CacheService {
   }
 
   get<T>(key: string): T | null {
-    const start = Date.now();
-
     const entry = this.store.get(key);
 
     if (!entry) {

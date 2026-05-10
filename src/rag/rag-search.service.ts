@@ -3,6 +3,8 @@ import { RagSearchRequest, RagSearchResponse } from './dto/search.dto';
 import { RagVectorService } from './rag-vector.service';
 import { RagService } from './rag.service';
 import { RAG_CONFIG } from './rag-config';
+import { QdrantFilter } from './types/qdrant-filter';
+import { RagServiceUnavailableException } from './rag-service-unavailable.exception';
 
 @Injectable()
 export class RagSearchService {
@@ -11,56 +13,71 @@ export class RagSearchService {
     private readonly ragVectorService: RagVectorService,
   ) {}
 
-  public async search(request: RagSearchRequest): Promise<RagSearchResponse> {
+  public async search(
+    request: RagSearchRequest,
+    options?: {
+      useAiRerank?: boolean;
+    },
+  ): Promise<RagSearchResponse> {
     const limit = request.limit ?? RAG_CONFIG.SEARCH_LIMIT;
+    const filter = this.buildFilter(request);
+    const useAiRerank = options?.useAiRerank ?? true;
 
     const queryVector = await this.ragService.generateEmbedding(request.query);
 
     console.log('[RAG] query:', request.query);
     console.log('[RAG] vector dim:', queryVector.length);
-    console.log('[RAG] filter:', JSON.stringify(this.buildFilter(request)));
+    console.log('[RAG] filter:', JSON.stringify(filter));
 
     const candidates = await this.ragVectorService.search(queryVector, {
       limit: RAG_CONFIG.RERANK_CANDIDATES,
-      filter: this.buildFilter(request),
+      filter,
       scoreThreshold: RAG_CONFIG.SCORE_THRESHOLD,
     });
 
-    const reranked = await Promise.all(
-      candidates.map(async (r) => {
-        const score = await this.ragService.rerank(
-          request.query,
-          String(r.payload?.content),
-        );
+    const reranked = [];
+    let aiRerankAvailable = true;
 
-        const lexicalScore = this.calculateLexicalScore(
-          request.query,
-          String(r.payload?.content),
-        );
+    for (const [index, candidate] of candidates.entries()) {
+      const lexicalScore = this.calculateLexicalScore(
+        request.query,
+        String(candidate.payload?.content),
+      );
 
-        const mergedScore = score * 0.7 + lexicalScore * 0.3;
+      let rerankScore = candidate.score;
 
-        return {
-          ...r,
-          rerankScore: score,
-          lexicalScore,
-          mergedScore,
-        };
-      }),
-    );
+      if (
+        useAiRerank &&
+        aiRerankAvailable &&
+        index < RAG_CONFIG.AI_RERANK_LIMIT
+      ) {
+        try {
+          rerankScore = await this.ragService.rerank(
+            request.query,
+            String(candidate.payload?.content),
+          );
+        } catch (error) {
+          if (error instanceof RagServiceUnavailableException) {
+            aiRerankAvailable = false;
+            rerankScore = candidate.score;
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      const mergedScore = rerankScore * 0.7 + lexicalScore * 0.3;
+
+      reranked.push({
+        ...candidate,
+        rerankScore,
+        lexicalScore,
+        mergedScore,
+      });
+    }
 
     reranked.sort((a, b) => b.mergedScore - a.mergedScore);
     const top = reranked.slice(0, limit);
-
-    console.log(
-      '[RAG] merged scores:',
-      top.map((r) => ({
-        semantic: r.score,
-        rerank: r.rerankScore,
-        lexical: r.lexicalScore,
-        merged: r.mergedScore,
-      })),
-    );
 
     return {
       results: top.map((r) => ({

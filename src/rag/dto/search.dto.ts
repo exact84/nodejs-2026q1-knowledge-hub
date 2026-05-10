@@ -42,15 +42,6 @@ export class RagSearchRequest {
   tags?: string[];
 }
 
-// export class RagSearchResponse {
-//   results: Array<{
-//     articleId: string;
-//     articleTitle: string;
-//     chunk: string;
-//     similarity: number;
-//   }>;
-// }
-
 export class RagSearchResultDto {
   @ApiProperty()
   articleId: string;

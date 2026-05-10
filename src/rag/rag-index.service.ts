@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RagChunkingService } from './rag-chunking.service';
 import { RagVectorService } from './rag-vector.service';
@@ -7,7 +7,7 @@ import { v5 as uuidv5 } from 'uuid';
 import { RagService } from './rag.service';
 
 @Injectable()
-export class RagIndexService implements OnModuleInit {
+export class RagIndexService {
   private static readonly NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341';
   private readonly logger = new Logger(RagIndexService.name);
 
@@ -18,11 +18,6 @@ export class RagIndexService implements OnModuleInit {
     private readonly ragVectorService: RagVectorService,
   ) {}
 
-  public async onModuleInit(): Promise<void> {
-    // await new Promise((r) => setTimeout(r, 1000)); // wait for other services to initialize
-    await this.indexPublishedArticles();
-  }
-
   public async indexPublishedArticles(): Promise<void> {
     const articles = await this.prismaService.article.findMany({
       where: {
@@ -31,7 +26,21 @@ export class RagIndexService implements OnModuleInit {
       include: { tags: true },
     });
 
+    const publishedIds = new Set(articles.map((article) => article.id));
+    const indexedIds = await this.ragVectorService.listIndexedArticleIds();
+
     let indexedChunks = 0;
+    let deletedArticles = 0;
+
+    for (const indexedArticleId of indexedIds) {
+      if (!publishedIds.has(indexedArticleId)) {
+        await this.ragVectorService.deleteByArticleId(indexedArticleId);
+        deletedArticles += 1;
+        this.logger.log(
+          `Removed stale vectors for article: ${indexedArticleId}`,
+        );
+      }
+    }
 
     for (const article of articles) {
       const existing = await this.ragVectorService.getArticleIndexMetadata(
@@ -73,10 +82,17 @@ export class RagIndexService implements OnModuleInit {
       }
     }
 
+    this.logger.log(`Removed stale article indexes: ${deletedArticles}`);
     this.logger.log(`Indexed chunks: ${indexedChunks}`);
   }
 
   private stripHtml(html: string): string {
     return html.replace(/<[^>]*>/g, ' ');
+  }
+
+  public async deleteArticleIndex(articleId: string): Promise<void> {
+    await this.ragVectorService.deleteByArticleId(articleId);
+
+    this.logger.log(`Deleted vectors for article: ${articleId}`);
   }
 }

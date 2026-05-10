@@ -3,6 +3,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import { QdrantPoint } from './types/qdrant-point';
 import { RAG_CONFIG } from './rag-config';
 import { RagServiceUnavailableException } from './rag-service-unavailable.exception';
+import { QdrantFilter } from './types/qdrant-filter';
 
 @Injectable()
 export class RagVectorService implements OnModuleInit {
@@ -119,5 +120,35 @@ export class RagVectorService implements OnModuleInit {
     );
 
     return result.points[0];
+  }
+
+  public async listIndexedArticleIds(): Promise<string[]> {
+    try {
+      const articleIds = new Set<string>();
+      let offset: string | number | Record<string, unknown> | undefined;
+
+      do {
+        const result = await this.client.scroll(this.collectionName, {
+          limit: 200,
+          with_payload: ['articleId'],
+          with_vector: false,
+          offset,
+        });
+
+        for (const point of result.points) {
+          const articleId = point.payload?.articleId;
+          if (typeof articleId === 'string' && articleId.length > 0) {
+            articleIds.add(articleId);
+          }
+        }
+
+        offset = result.next_page_offset ?? undefined;
+      } while (offset !== undefined);
+
+      return [...articleIds];
+    } catch (error) {
+      console.error('[RAG] Qdrant listIndexedArticleIds failed', error);
+      throw new RagServiceUnavailableException('Vector database unavailable');
+    }
   }
 }

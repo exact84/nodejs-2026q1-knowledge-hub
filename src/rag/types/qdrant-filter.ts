@@ -1,4 +1,4 @@
-type QdrantFilter = {
+export type QdrantFilter = {
   must?: Array<{
     key: string;
     match: {
