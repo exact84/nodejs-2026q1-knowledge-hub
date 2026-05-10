@@ -20,6 +20,17 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 4,
 };
 
+const ANSI_RESET = '\x1b[0m';
+const ANSI_DIM = '\x1b[2m';
+
+const LOG_LEVEL_COLORS: Record<LogLevel, string> = {
+  error: '\x1b[31m',
+  warn: '\x1b[33m',
+  log: '\x1b[32m',
+  verbose: '\x1b[35m',
+  debug: '\x1b[36m',
+};
+
 function isLogLevel(value: string): value is LogLevel {
   return LOG_LEVELS.some((level) => level === value);
 }
@@ -135,17 +146,38 @@ export class AppLogger implements LoggerService {
   }
 
   private formatHumanReadable(payload: LogPayload): string {
-    const context = payload.context ? `[${payload.context}]` : '';
-    const base =
-      `${payload.timestamp} ${payload.level.toUpperCase()} ${context} ${payload.message}`.trim();
+    const color = LOG_LEVEL_COLORS[payload.level];
+    const timestamp = `${ANSI_DIM}${payload.timestamp}${ANSI_RESET}`;
+    const level = `${color}${payload.level.toUpperCase()}${ANSI_RESET}`;
+    const context = payload.context
+      ? `${ANSI_DIM}[${payload.context}]${ANSI_RESET}`
+      : '';
+    const base = `${timestamp} ${level} ${context} ${payload.message}`.trim();
 
     if (payload.details === undefined && payload.trace === undefined) {
       return base;
     }
 
-    return `${base} ${JSON.stringify({
-      details: payload.details,
-      trace: payload.trace,
-    })}`;
+    const blocks: string[] = [base];
+
+    if (payload.details !== undefined) {
+      const formattedDetails = JSON.stringify(payload.details, null, 2)
+        .split('\n')
+        .map((line) => `    ${line}`)
+        .join('\n');
+
+      blocks.push(`  details:\n${formattedDetails}`);
+    }
+
+    if (payload.trace !== undefined) {
+      const formattedTrace = payload.trace
+        .split('\n')
+        .map((line) => `    ${line}`)
+        .join('\n');
+
+      blocks.push(`  trace:\n${formattedTrace}`);
+    }
+
+    return blocks.join('\n');
   }
 }
