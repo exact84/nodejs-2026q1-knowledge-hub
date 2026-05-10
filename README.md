@@ -11,6 +11,7 @@ Features:
 - Role-based access control (RBAC)
 - Rate limiting for auth endpoints
 - AI endpoints for article summarize/translate/analyze
+- RAG endpoints for article indexing, semantic search, and grounded chat
 - Gemini integration with configurable model and API key via .env
 - AI response caching with TTL and deterministic cache keys
 - AI usage statistics (requests, tokens, latency)
@@ -48,12 +49,19 @@ Required variables:
 - `GEMINI_MODEL`
 - `AI_RATE_LIMIT_RPM`
 - `AI_CACHE_TTL_SEC`
+- `GEMINI_EMBEDDING_MODEL`
+- `RAG_VECTOR_DB_PROVIDER`
+- `RAG_VECTOR_DB_URL`
+- `RAG_VECTOR_COLLECTION`
+- `RAG_CHUNK_SIZE`
+- `RAG_CHUNK_OVERLAP`
+- `RAG_CONVERSATION_MAX_MESSAGES`
 
 ## AI Setup (Gemini)
 
 ### 1. How to obtain Gemini API key
 
-1. Open Google AI Studio: https://aistudio.google.com
+1. Open Google AI Studio: <https://aistudio.google.com>
 2. Sign in with your Google account.
 3. Open the API keys page from AI Studio.
 4. Click **Create API key**.
@@ -63,7 +71,7 @@ Required variables:
 
 Default model in this project is:
 
-- `gemini-2.5-flash`
+- `gemini-2.0-flash`
 
 It is configured by the `GEMINI_MODEL` environment variable.
 
@@ -83,7 +91,7 @@ Paste your Gemini API key into:
 
 ### 4. How to test AI endpoints
 
-1. Endpoints:
+Endpoints:
 
 - `POST /ai/articles/:articleId/summarize`
 - `POST /ai/articles/:articleId/translate`
@@ -91,7 +99,7 @@ Paste your Gemini API key into:
 - `POST /ai/generate`
 - `GET /ai/stats`
 
-3. Suggested flow:
+Suggested flow:
 
 - Create or seed article data.
 - Login via `POST /auth/login` to get `accessToken`.
@@ -103,6 +111,86 @@ Paste your Gemini API key into:
 - Model response latency depends on prompt size and upstream load.
 - Regional availability and model access can vary by account/location.
 - Upstream service timeouts or temporary unavailability can occur.
+
+## RAG Module
+
+The project includes a Retrieval-Augmented Generation module for indexing published articles into a vector database and using them for semantic search and grounded chat.
+
+### What the RAG module does
+
+- indexes published articles into Qdrant
+- splits article content into chunks using configurable chunk size and overlap
+- generates Gemini embeddings for chunks and search queries
+- supports semantic retrieval with metadata filters
+- supports grounded chat over retrieved article chunks
+- keeps short in-memory conversation history for chat follow-up questions
+
+### RAG environment variables
+
+- `GEMINI_EMBEDDING_MODEL` - Gemini embedding model used for vector generation
+- `RAG_VECTOR_DB_PROVIDER` - current vector DB provider name
+- `RAG_VECTOR_DB_URL` - Qdrant base URL
+- `RAG_VECTOR_COLLECTION` - Qdrant collection name
+- `RAG_CHUNK_SIZE` - chunk size used during indexing
+- `RAG_CHUNK_OVERLAP` - overlap between adjacent chunks
+- `RAG_CONVERSATION_MAX_MESSAGES` - max in-memory chat history size per conversation
+
+### RAG endpoints
+
+- `POST /ai/rag/index`
+  Reindexes published articles into vector storage
+  -> `202 Accepted`
+  -> `503 Service Unavailable`
+
+- `DELETE /ai/rag/index/articles/:articleId`
+  Removes all vectors for a specific article
+  -> `200 OK`
+  -> `503 Service Unavailable`
+
+- `POST /ai/rag/search`
+  Performs semantic search over indexed article chunks
+  Supports optional filters: `articleStatus`, `categoryId`, `tags`
+  -> `201 Created`
+  -> `400 Bad Request`
+  -> `503 Service Unavailable`
+
+- `POST /ai/rag/chat`
+  Performs retrieval + grounded answer generation over indexed content
+  Supports short conversation memory through `conversationId`
+  -> `201 Created`
+  -> `400 Bad Request`
+  -> `503 Service Unavailable`
+
+### How RAG works
+
+1. `POST /ai/rag/index` loads published articles from PostgreSQL.
+2. HTML content is normalized and split into chunks.
+3. Each chunk is embedded with Gemini and stored in Qdrant together with metadata:
+   `articleId`, `articleTitle`, `articleStatus`, `categoryId`, `tags`, `chunkIndex`, `indexedAt`.
+4. `POST /ai/rag/search` embeds the query, retrieves vector candidates from Qdrant, applies hybrid ranking, and returns the most relevant chunks.
+5. `POST /ai/rag/chat` retrieves relevant chunks, builds a grounded prompt, and generates an answer using Gemini.
+
+### RAG search behavior
+
+- vector search uses Qdrant
+- metadata filters support article status, category, and tags
+- hybrid ranking combines semantic similarity with lexical overlap
+- AI reranking is available for search and is intentionally reduced for chat retrieval to avoid excessive Gemini quota usage
+
+### RAG chat behavior
+
+- chat stores short in-memory history keyed by `conversationId`
+- follow-up questions can reuse recent user context for retrieval
+- if Gemini generation is temporarily unavailable, chat returns a fallback answer built from retrieved sources instead of failing completely
+
+### Running RAG with Docker Compose
+
+`docker-compose.yml` starts a dedicated `vectordb` container based on Qdrant.
+
+The application connects to it through:
+
+- `RAG_VECTOR_DB_URL=http://vectordb:6333`
+- `RAG_VECTOR_COLLECTION=<collection-name>`
 
 ## Installing NPM modules
 
@@ -451,7 +539,7 @@ docker compose --profile debug up --build
 
 ### Docker Hub image
 
-https://hub.docker.com/r/exact84/knowledge-hub-api - only for task 06a
+<https://hub.docker.com/r/exact84/knowledge-hub-api> - only for task 06a
 
 ## Security scan
 
